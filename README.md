@@ -4,6 +4,18 @@
   <img width="517" height="457" alt="image" src="https://github.com/user-attachments/assets/d23b2dab-d6a2-4dbb-858e-8278a6777b58" />
 </p>
 
+## Screenshots
+
+<img width="677" height="297" alt="1" src="https://github.com/user-attachments/assets/6ae0fb19-441e-4711-afb8-3d5165fef5d2" />
+<img width="1562" height="687" alt="2" src="https://github.com/user-attachments/assets/599685a9-f440-4a6a-8166-ab7e4f9e0b4a" />
+<img width="595" height="181" alt="3" src="https://github.com/user-attachments/assets/28ea28f1-2ae3-4f32-bc70-4f4b31fca93b" />
+<img width="722" height="255" alt="4" src="https://github.com/user-attachments/assets/514988db-e15b-4ba8-a6c9-aae6872cdc71" />
+<img width="592" height="207" alt="5" src="https://github.com/user-attachments/assets/6c51d62a-c1e5-48eb-9790-a3e38f649fd2" />
+<img width="1665" height="895" alt="6" src="https://github.com/user-attachments/assets/bd746b28-3117-4083-9918-2902dd790cb6" />
+<img width="1027" height="1031" alt="7" src="https://github.com/user-attachments/assets/81f933eb-fbc3-4b52-85b9-ef298e7c48a0" />
+<img width="1027" height="1031" alt="7" src="https://github.com/user-attachments/assets/e854b14a-c68f-431e-9611-828cca8d8075" />
+<img width="1452" height="567" alt="8" src="https://github.com/user-attachments/assets/72058f32-3cda-4f6a-b5b2-04ecf649c0e6" />
+
 Cova is a high-performance, lightweight, and robust C Web Framework designed for building modern web applications, RESTful APIs, and real-time services. It handles everything from socket management to database operations internally, without relying on bloated external dependencies.
 
 ## Key Features
