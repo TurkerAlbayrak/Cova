@@ -1,0 +1,150 @@
+#include "cova.h"
+#include <stdio.h>
+#include <string.h>
+#include "cJSON.h"
+#include "database.h"
+#include "websocket.h"
+#include "memtrack.h"
+
+// ---------------------------------------------------------
+// Application State
+// ---------------------------------------------------------
+App app;
+
+// ---------------------------------------------------------
+// Middlewares
+// ---------------------------------------------------------
+
+/*
+ * Logger Middleware
+ * Logs incoming HTTP requests.
+ */
+int logger_middleware(Request *req, Response *res) {
+    (void)res;
+    printf("[LOGGER] %s %s\n", http_method_str(req->method), req->path);
+    return 1; // Continue to next handler
+}
+
+// ---------------------------------------------------------
+// Handlers
+// ---------------------------------------------------------
+
+/*
+ * Hello World Route
+ * Responds with a simple text message.
+ */
+void hello_handler(Request *req, Response *res) {
+    (void)req;
+    response_header(res, "X-Powered-By", "Cova-Framework");
+    response_text(res, "Welcome to Cova Framework!");
+}
+
+/*
+ * JSON Response Route
+ * Creates a JSON object and responds with it.
+ */
+void api_status_handler(Request *req, Response *res) {
+    (void)req;
+    Json *res_json = cJSON_CreateObject();
+    cJSON_AddStringToObject(res_json, "status", "online");
+    cJSON_AddStringToObject(res_json, "version", "1.0.0");
+    
+    response_status(res, 200);
+    response_json_object(res, res_json);
+    
+    cJSON_Delete(res_json); // Prevent memory leaks
+}
+
+/*
+ * SQLite Integration Route
+ * Demonstrates database querying and returning JSON arrays.
+ */
+void db_users_handler(Request *req, Response *res) {
+    (void)req;
+    const char *sql = "SELECT * FROM users LIMIT 10;";
+    Json *rows = db_query(sql);
+    
+    if (rows) {
+        response_json_object(res, rows);
+        cJSON_Delete(rows);
+    } else {
+        response_status(res, 500);
+        response_json(res, "{\"error\": \"Database error or empty table\"}");
+    }
+}
+
+/*
+ * WebSocket Chat Route
+ * Upgrades the connection to a WebSocket and echoes messages.
+ */
+void websocket_chat_handler(Request *req, Response *res) {
+    if (!ws_handshake(req, res)) {
+        response_status(res, 400);
+        response_text(res, "WebSocket Upgrade Required");
+        return;
+    }
+    
+    printf("[WEBSOCKET] Client connected.\n");
+    
+    while (1) {
+        char *msg = ws_read_frame(res->client_socket);
+        if (!msg) {
+            printf("[WEBSOCKET] Client disconnected.\n");
+            break;
+        }
+        
+        // Echo the message back
+        char reply[512];
+        snprintf(reply, sizeof(reply), "Server Echo: %s", msg);
+        ws_send_text(res->client_socket, reply);
+        
+        cova_free(msg);
+    }
+}
+
+/*
+ * Custom 404 Error Handler
+ */
+void not_found_handler(Request *req, Response *res) {
+    (void)req;
+    response_status(res, 404);
+    response_json(res, "{\"error\": \"Resource not found\"}");
+}
+
+// ---------------------------------------------------------
+// Main Entry Point
+// ---------------------------------------------------------
+int main(void) {
+    // 1. Initialize SQLite Database
+    if (!db_init("app.db")) {
+        printf("Failed to initialize database.\n");
+        return 1;
+    }
+    
+    db_execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL);");
+    db_execute("INSERT INTO users (name) VALUES ('Admin');"); // Sample data
+
+    // 2. Initialize the Framework App
+    app_init(&app);
+    
+    // 3. Register Middlewares
+    app_use(&app, logger_middleware);
+    
+    // 4. Register Static Files Directory
+    app_static(&app, "/public", "./public");
+    
+    // 5. Register Custom Error Handlers
+    app_on_404(&app, not_found_handler);
+    
+    // 6. Define Routes
+    app_get(&app, "/", hello_handler);
+    app_get(&app, "/api/status", api_status_handler);
+    app_get(&app, "/api/users", db_users_handler);
+    app_get(&app, "/ws", websocket_chat_handler);
+    
+    // 7. Start the Server
+    printf("Starting Cova Framework server...\n");
+    app_run(&app, 8080);
+    
+    return 0;
+}

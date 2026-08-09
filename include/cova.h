@@ -1,0 +1,66 @@
+#ifndef COVA_H
+#define COVA_H
+
+#include <stdint.h>
+#include "request.h"
+#include "response.h"
+
+#define MAX_ROUTES 100
+#define MAX_MIDDLEWARES 10
+
+// Endpoint'lere bağlayacağımız fonksiyonların tipi (Örn: void hello(Request *req, Response *res))
+typedef void (*Handler)(Request *req, Response *res);
+
+// Araya giren ara yazılım fonksiyonlarının tipi (1 dönerse devam eder, 0 dönerse kesilir)
+typedef int (*Middleware)(Request *req, Response *res);
+
+typedef struct {
+    HttpMethod method;
+    const char *path;
+    Handler handler;
+} Route;
+
+// Statik dosya rotasını (Örn: "/public" -> "./public_folder") temsil eden yapı
+typedef struct {
+    const char *url_prefix;
+    const char *folder_path;
+} StaticRoute;
+
+// Tüm Framework uygulamasını temsil eden nesne
+typedef struct {
+    Route routes[MAX_ROUTES];
+    int route_count;
+    
+    Middleware middlewares[MAX_MIDDLEWARES];
+    int middleware_count;
+    
+    StaticRoute static_routes[10];
+    int static_route_count;
+    
+    // Global Hata Yöneticileri (V13)
+    Handler not_found_handler; // 404
+    Handler error_handler;     // 500
+} App;
+
+// App objesini başlatır
+void app_init(App *app);
+
+// Uygulamaya global bir Middleware (Ara Yazılım) ekler
+void app_use(App *app, Middleware middleware);
+
+// Uygulamaya statik dosya dizini ekler (Örn: app_static(&app, "/public", "./public");)
+void app_static(App *app, const char *url_prefix, const char *folder_path);
+
+// Özel 404 (Sayfa Bulunamadı) sayfası tanımlar
+void app_on_404(App *app, Handler handler);
+
+// Özel 500 (Sunucu Hatası) sayfası tanımlar
+void app_on_500(App *app, Handler handler);
+
+void app_run(App *app, uint16_t port);
+
+// Router API'leri
+void app_get(App *app, const char *path, Handler handler);
+void app_post(App *app, const char *path, Handler handler);
+
+#endif // COVA_H

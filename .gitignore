@@ -1,0 +1,17 @@
+# Build klasorleri
+build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
+*.exe
+
+# Veritabanlari
+*.db
+*.sqlite
+
+# IDE/Editör ayarlari
+.vscode/
+.idea/
+*.swp
+.gemini/

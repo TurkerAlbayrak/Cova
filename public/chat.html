@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cova WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        #chat { height: 300px; border: 1px solid #ccc; padding: 10px; overflow-y: auto; margin-bottom: 10px; background: #f9f9f9; }
+        input[type="text"] { width: 75%; padding: 10px; }
+        button { width: 20%; padding: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Cova WebSocket Echo Server</h2>
+    <div id="chat"></div>
+    <input type="text" id="msg" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMsg()">
+    <button onclick="sendMsg()">Send</button>
+
+    <script>
+        const chat = document.getElementById("chat");
+        const ws = new WebSocket("ws://" + location.host + "/ws");
+
+        ws.onopen = () => chat.innerHTML += "<p style='color:green'>Connected to Cova WebSocket!</p>";
+        ws.onclose = () => chat.innerHTML += "<p style='color:red'>Disconnected from server.</p>";
+        ws.onerror = () => chat.innerHTML += "<p style='color:red'>WebSocket Error!</p>";
+        
+        ws.onmessage = (e) => {
+            chat.innerHTML += "<p><strong>Server:</strong> " + e.data + "</p>";
+            chat.scrollTop = chat.scrollHeight;
+        };
+
+        function sendMsg() {
+            const input = document.getElementById("msg");
+            if (input.value && ws.readyState === WebSocket.OPEN) {
+                chat.innerHTML += "<p style='color:blue'><strong>You:</strong> " + input.value + "</p>";
+                ws.send(input.value);
+                input.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
