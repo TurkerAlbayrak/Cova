@@ -1,5 +1,9 @@
 # Cova Framework
 
+<p align="center">
+  <img width="517" height="457" alt="image" src="https://github.com/user-attachments/assets/d23b2dab-d6a2-4dbb-858e-8278a6777b58" />
+</p>
+
 Cova is a high-performance, lightweight, and robust C Web Framework designed for building modern web applications, RESTful APIs, and real-time services. It handles everything from socket management to database operations internally, without relying on bloated external dependencies.
 
 ## Key Features
@@ -57,7 +61,7 @@ If you want to use the Cova Framework to build your own application, the most mo
 ### Step 1: Add Cova as a Submodule
 Inside your own project directory, run:
 ```bash
-git submodule add https://github.com/yourusername/cova.git vendor/cova
+git submodule add https://github.com/TurkerAlbayrak/Cova.git vendor/cova
 ```
 
 ### Step 2: Update Your CMakeLists.txt
