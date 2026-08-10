@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cova Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-content">
+            <h1 class="logo">Cova<span>Admin</span></h1>
+            <div>
+                <button id="logout-btn" class="btn btn-outline hidden">Logout</button>
+                <a href="index.html" class="btn btn-primary">Back to Blog</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container admin-container">
+        <!-- Login Form -->
+        <div id="login-section" class="glass-card">
+            <h2>Admin Login</h2>
+            <p>Hint: admin / 123456</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div id="login-error" class="error hidden">Invalid credentials</div>
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </form>
+        </div>
+
+        <!-- Dashboard (Hidden by default) -->
+        <div id="dashboard-section" class="hidden">
+            <header class="dashboard-header">
+                <h2>Create New Post</h2>
+                <p>You are authenticated via JWT.</p>
+            </header>
+            
+            <form id="post-form" class="glass-card">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="post-title" required placeholder="Enter post title">
+                </div>
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea id="post-content" rows="6" required placeholder="Write your content here..."></textarea>
+                </div>
+                <div id="post-success" class="success hidden">Post published successfully!</div>
+                <div id="post-error" class="error hidden">Failed to publish.</div>
+                <button type="submit" class="btn btn-primary">Publish Post</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Background decoration -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <script src="app.js"></script>
+    <script>
+        // Init Admin logic
+        document.addEventListener('DOMContentLoaded', initAdmin);
+    </script>
+</body>
+</html>

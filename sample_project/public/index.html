@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cova Blog</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar glass">
+        <div class="nav-content">
+            <h1 class="logo">Cova<span>Blog</span></h1>
+            <a href="admin.html" class="btn btn-outline">Admin Panel</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <header class="hero">
+            <h2 class="gradient-text">Built with Pure C.</h2>
+            <p>Welcome to the fastest blog on the internet, powered by Cova Framework.</p>
+        </header>
+
+        <!-- Posts Grid -->
+        <div id="posts-grid" class="posts-grid">
+            <!-- Posts will be injected here via JS -->
+            <div class="loading">Loading posts...</div>
+        </div>
+    </main>
+
+    <!-- Background decoration -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
