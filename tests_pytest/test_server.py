@@ -206,3 +206,19 @@ def test_file_upload():
     assert "success" in r.text
     assert "avatar.txt" in r.text
     assert str(len(file_content)) in r.text
+
+def test_orm():
+    """Test ORM capabilities via query parameters"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    r = requests.get(url + "/api/users?id=1", verify=False)
+    assert r.status_code == 200
+    assert "cova_admin" in r.text
+    
+    # Test for non-existent user
+    r_not_found = requests.get(url + "/api/users?id=9999", verify=False)
+    assert r_not_found.status_code == 404
