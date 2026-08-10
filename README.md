@@ -4,7 +4,6 @@
   <p><strong>A high-performance, enterprise-grade Web Framework written in pure C.</strong></p>
 
   [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![C11 Standard](https://img.shields.io/badge/Language-C11-00599C.svg)](#)
   [![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](#)
 </div>
@@ -238,5 +237,3 @@ For an in-depth guide on every feature, API reference, and advanced tutorials, p
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
