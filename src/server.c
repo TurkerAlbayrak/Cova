@@ -7,6 +7,12 @@
 #include <signal.h>
 #include "cJSON.h"
 #include "memtrack.h"
+#include "threadpool.h"
+
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -17,8 +23,9 @@
     #include <unistd.h>
     #include <arpa/inet.h>
     #include <sys/socket.h>
-    #include <pthread.h> // pthread_create için
+#ifndef CLOSE_SOCKET
     #define CLOSE_SOCKET(s) close(s)
+#endif
 #endif
 
 // Router Eşleştirme Motoru (YENİ - V9) - İleri Tanımlama (Forward Declaration)
@@ -46,7 +53,28 @@ void* handle_client_thread(void *arg) {
 
     // İstemciden gelen veriyi okuma
     char buffer[4096] = {0};
-    int bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+    int bytes_read = 0;
+#ifdef USE_OPENSSL
+    SSL *ssl = NULL;
+    if (app->use_https && app->ssl_ctx) {
+        ssl = SSL_new((SSL_CTX*)app->ssl_ctx);
+        SSL_set_fd(ssl, client_socket);
+        if (SSL_accept(ssl) <= 0) {
+            ERR_print_errors_fp(stderr);
+            SSL_free(ssl);
+            CLOSE_SOCKET(client_socket);
+#ifdef _WIN32
+            return 0;
+#else
+            return NULL;
+#endif
+        }
+        bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+    } else
+#endif
+    {
+        bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+    }
     
     if (bytes_read > 0) {
         // Buffer'ı Request struct'ına çevir
@@ -78,6 +106,10 @@ void* handle_client_thread(void *arg) {
         // Router Mantığı
         Response res;
         res.client_socket = client_socket;
+        res.ssl = NULL;
+#ifdef USE_OPENSSL
+        res.ssl = ssl;
+#endif
         res.status_code = 200; // Varsayılan durum kodu
         res.header_count = 0;  // Başlangıçta hiç özel header yok
         
@@ -141,6 +173,12 @@ void* handle_client_thread(void *arg) {
     }
 
     // Bağlantıyı kapat
+#ifdef USE_OPENSSL
+    if (ssl) {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    }
+#endif
     CLOSE_SOCKET(client_socket);
     
 #ifdef _WIN32
@@ -158,11 +196,48 @@ void app_init(App *app) {
     app->not_found_handler = NULL;
     app->error_handler = NULL;
     
+    app->use_https = 0;
+    app->ssl_ctx = NULL;
+    app->thread_pool = threadpool_create(16); // V17 Thread Pool
+    
     // V16: JSON kütüphanesinin (cJSON) arka planda bizim Tracker'ımızı kullanmasını sağlıyoruz!
     cJSON_Hooks hooks;
     hooks.malloc_fn = cova_malloc;
     hooks.free_fn = cova_free;
     cJSON_InitHooks(&hooks);
+}
+
+int app_use_https(App *app, const char *cert_file, const char *key_file) {
+    if (!app) return 0;
+#ifdef USE_OPENSSL
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    
+    const SSL_METHOD *method = TLS_server_method();
+    SSL_CTX *ctx = SSL_CTX_new(method);
+    if (!ctx) {
+        ERR_print_errors_fp(stderr);
+        return 0;
+    }
+    
+    if (SSL_CTX_use_certificate_file(ctx, cert_file, SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+        return 0;
+    }
+    
+    if (SSL_CTX_use_PrivateKey_file(ctx, key_file, SSL_FILETYPE_PEM) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        return 0;
+    }
+    
+    app->use_https = 1;
+    app->ssl_ctx = ctx;
+    return 1;
+#else
+    printf("OpenSSL is not enabled in this build.\n");
+    return 0;
+#endif
 }
 
 void app_use(App *app, Middleware middleware) {
@@ -337,25 +412,8 @@ void app_run(App *app, uint16_t port) {
         args->client_socket = client_socket;
         args->app = app;
 
-#ifdef _WIN32
-        // Windows Thread Oluşturma
-        HANDLE thread = CreateThread(NULL, 0, handle_client_thread, args, 0, NULL);
-        if (thread) {
-            CloseHandle(thread); // Detach: Thread kendi kendine kapansın, beklemeyelim
-        } else {
-            cova_free(args); // V16 Tracker
-            CLOSE_SOCKET(client_socket);
-        }
-#else
-        // Linux/Mac POSIX Thread (pthread) Oluşturma
-        pthread_t thread;
-        if (pthread_create(&thread, NULL, handle_client_thread, args) == 0) {
-            pthread_detach(thread); // Detach
-        } else {
-            cova_free(args); // V16 Tracker
-            CLOSE_SOCKET(client_socket);
-        }
-#endif
+        // V17: Thread Pool kullanımı
+        threadpool_add_task((ThreadPool*)app->thread_pool, (ThreadFunc)handle_client_thread, args);
     }
 
     CLOSE_SOCKET(server_fd);

@@ -11,6 +11,7 @@ typedef struct {
 // Handler fonksiyonlarında yanıt göndermek için kullandığımız obje
 typedef struct {
     int client_socket;
+    void *ssl; // V17: HTTPS için SSL nesnesi
     int status_code; // Varsayılan olarak 200 olacak
     ResponseHeader headers[MAX_RESPONSE_HEADERS];
     int header_count;

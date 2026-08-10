@@ -12,6 +12,19 @@
     #include <sys/socket.h>
 #endif
 
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#endif
+
+static int net_send(Response *res, const void *buf, size_t len) {
+#ifdef USE_OPENSSL
+    if (res->ssl) {
+        return SSL_write((SSL*)res->ssl, buf, (int)len);
+    }
+#endif
+    return send(res->client_socket, buf, (int)len, 0);
+}
+
 // HTTP durum kodlarına karşılık gelen metinler (Reason Phrases)
 static const char* http_status_text(int status_code) {
     switch (status_code) {
@@ -64,7 +77,7 @@ void response_text(Response *res, const char *text) {
         "\r\n" // Boş satır, headerların bittiğini gösterir
         "%s", status, reason, strlen(text), header_buf, text);
         
-    send(res->client_socket, buffer, (int)strlen(buffer), 0);
+    net_send(res, buffer, strlen(buffer));
 }
 
 void response_json(Response *res, const char *json_str) {
@@ -90,7 +103,7 @@ void response_json(Response *res, const char *json_str) {
         "\r\n"
         "%s", status, reason, strlen(json_str), header_buf, json_str);
         
-    send(res->client_socket, buffer, (int)strlen(buffer), 0);
+    net_send(res, buffer, strlen(buffer));
 }
 
 void response_json_object(Response *res, Json *json) {
@@ -143,12 +156,12 @@ void response_file(Response *res, const char *filepath) {
         "%s"
         "\r\n", status, reason, mime, fsize, header_buf);
         
-    send(res->client_socket, buffer, (int)strlen(buffer), 0);
+    net_send(res, buffer, strlen(buffer));
     
     // Dosya içeriğini 4KB (4096 byte) parçalar halinde ağa (Network) gönder
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        send(res->client_socket, buffer, (int)bytes_read, 0);
+        net_send(res, buffer, bytes_read);
     }
     
     fclose(file);
@@ -181,7 +194,7 @@ void response_html(Response *res, const char *html_str) {
         "\r\n"
         "%s", status, reason, length, header_buf, html_str);
         
-    send(res->client_socket, buffer, (int)strlen(buffer), 0);
+    net_send(res, buffer, strlen(buffer));
     cova_free(buffer);
 }
 

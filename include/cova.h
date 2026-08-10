@@ -5,6 +5,11 @@
 #include "request.h"
 #include "response.h"
 
+#ifdef USE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
+
 #define MAX_ROUTES 100
 #define MAX_MIDDLEWARES 10
 
@@ -40,6 +45,16 @@ typedef struct {
     // Global Hata Yöneticileri (V13)
     Handler not_found_handler; // 404
     Handler error_handler;     // 500
+
+    // V17: Thread Pool & HTTPS
+    void *thread_pool;
+    
+    int use_https;
+#ifdef USE_OPENSSL
+    SSL_CTX *ssl_ctx;
+#else
+    void *ssl_ctx;
+#endif
 } App;
 
 // App objesini başlatır
@@ -50,6 +65,9 @@ void app_use(App *app, Middleware middleware);
 
 // Uygulamaya statik dosya dizini ekler (Örn: app_static(&app, "/public", "./public");)
 void app_static(App *app, const char *url_prefix, const char *folder_path);
+
+// HTTPS desteğini aktifleştirir ve sertifikaları yükler
+int app_use_https(App *app, const char *cert_file, const char *key_file);
 
 // Özel 404 (Sayfa Bulunamadı) sayfası tanımlar
 void app_on_404(App *app, Handler handler);

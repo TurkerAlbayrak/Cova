@@ -142,7 +142,11 @@ int main(void) {
     app_get(&app, "/api/users", db_users_handler);
     app_get(&app, "/ws", websocket_chat_handler);
     
-    // 7. Start the Server
+    // 7. HTTPS Desteği (Sertifikalar varsa)
+    // Örnek: app_use_https(&app, "server.crt", "server.key");
+    // app_use_https(&app, "server.crt", "server.key");
+    
+    // 8. Start the Server
     printf("Starting Cova Framework server...\n");
     app_run(&app, 8080);
     
