@@ -12,6 +12,7 @@ typedef struct {
 typedef struct {
     int client_socket;
     void *ssl; // V17: HTTPS için SSL nesnesi
+    int keep_alive; // V18: Keep-Alive bayrağı
     int status_code; // Varsayılan olarak 200 olacak
     ResponseHeader headers[MAX_RESPONSE_HEADERS];
     int header_count;

@@ -67,3 +67,23 @@ def test_thread_pool_concurrency():
             
     # Tum istekler 200 donmeli, thread pool kitlenmemeli
     assert results.count(200) == num_requests, f"Gecersiz sonuclar: {results}"
+
+def test_keep_alive():
+    """Test Connection Keep-Alive by sending multiple requests on the same socket"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    session = requests.Session()
+    session.verify = False
+    
+    # Session, Connection: keep-alive gonderir ve TCP soketini acik tutar
+    for i in range(5):
+        r = session.get(url + "/")
+        assert r.status_code == 200
+        # Sunucunun keep-alive olarak yanit verdigini dogrula
+        assert r.headers.get("Connection", "").lower() == "keep-alive"
+        
+    session.close()

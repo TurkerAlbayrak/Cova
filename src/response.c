@@ -72,10 +72,10 @@ void response_text(Response *res, const char *text) {
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: text/plain\r\n"
         "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
+        "%s" // Connection header
         "%s" // Özel header'lar buraya gelir
         "\r\n" // Boş satır, headerların bittiğini gösterir
-        "%s", status, reason, strlen(text), header_buf, text);
+        "%s", status, reason, strlen(text), res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, text);
         
     net_send(res, buffer, strlen(buffer));
 }
@@ -98,10 +98,10 @@ void response_json(Response *res, const char *json_str) {
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: application/json\r\n"
         "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
+        "%s"
         "%s"
         "\r\n"
-        "%s", status, reason, strlen(json_str), header_buf, json_str);
+        "%s", status, reason, strlen(json_str), res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, json_str);
         
     net_send(res, buffer, strlen(buffer));
 }
@@ -152,9 +152,9 @@ void response_file(Response *res, const char *filepath) {
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %ld\r\n"
-        "Connection: close\r\n"
         "%s"
-        "\r\n", status, reason, mime, fsize, header_buf);
+        "%s"
+        "\r\n", status, reason, mime, fsize, res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf);
         
     net_send(res, buffer, strlen(buffer));
     
@@ -189,10 +189,10 @@ void response_html(Response *res, const char *html_str) {
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: text/html; charset=utf-8\r\n"
         "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
+        "%s"
         "%s"
         "\r\n"
-        "%s", status, reason, length, header_buf, html_str);
+        "%s", status, reason, length, res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, html_str);
         
     net_send(res, buffer, strlen(buffer));
     cova_free(buffer);

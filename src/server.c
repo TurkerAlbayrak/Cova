@@ -51,9 +51,17 @@ void* handle_client_thread(void *arg) {
     // Argümanlar kopyalandı, belleği temizle (V16 - Kendi free fonksiyonumuz)
     cova_free(client_args);
 
-    // İstemciden gelen veriyi okuma
-    char buffer[4096] = {0};
-    int bytes_read = 0;
+    // Zaman Aşımı (Timeout) ayarı (5 saniye)
+#ifdef _WIN32
+    DWORD timeout = 5000;
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+#else
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const void*)&tv, sizeof(tv));
+#endif
+
 #ifdef USE_OPENSSL
     SSL *ssl = NULL;
     if (app->use_https && app->ssl_ctx) {
@@ -69,14 +77,25 @@ void* handle_client_thread(void *arg) {
             return NULL;
 #endif
         }
-        bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
-    } else
-#endif
-    {
-        bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
     }
-    
-    if (bytes_read > 0) {
+#endif
+
+    while (1) {
+        char buffer[4096] = {0};
+        int bytes_read = 0;
+
+#ifdef USE_OPENSSL
+        if (ssl) {
+            bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
+        } else
+#endif
+        {
+            bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+        }
+        
+        if (bytes_read <= 0) {
+            break; // Bağlantı kapandı veya Timeout oldu
+        }
         // Buffer'ı Request struct'ına çevir
         Request req;
         request_parse(buffer, &req);
@@ -112,6 +131,17 @@ void* handle_client_thread(void *arg) {
 #endif
         res.status_code = 200; // Varsayılan durum kodu
         res.header_count = 0;  // Başlangıçta hiç özel header yok
+        
+        // V18: Keep-Alive tespiti (HTTP/1.1 varsayılan olarak kalıcıdır)
+        int keep_alive = 1;
+        const char *conn_header = request_header(&req, "Connection");
+        // strcasecmp POSIX, stricmp Windows
+#ifdef _WIN32
+        if (conn_header && _stricmp(conn_header, "close") == 0) keep_alive = 0;
+#else
+        if (conn_header && strcasecmp(conn_header, "close") == 0) keep_alive = 0;
+#endif
+        res.keep_alive = keep_alive;
         
         // Middleware zinciri (V11)
         int continue_chain = 1;
@@ -160,7 +190,6 @@ void* handle_client_thread(void *arg) {
                 }
             }
 
-            // Eğer ne statik ne de dinamik bir tanımlı route yoksa 404 dön
             if (!route_found) {
                 if (app->not_found_handler) {
                     app->not_found_handler(&req, &res);
@@ -170,7 +199,12 @@ void* handle_client_thread(void *arg) {
                 }
             }
         }
-    }
+        
+        // V18: Eğer Keep-Alive istenmemişse veya hata varsa döngüyü kır
+        if (!keep_alive) {
+            break;
+        }
+    } // while(1) Bitişi
 
     // Bağlantıyı kapat
 #ifdef USE_OPENSSL
