@@ -150,6 +150,9 @@ def test_rate_limiter():
     except:
         url = BASE_URL_HTTPS
         
+    # Sadece bu test icin limiti 20'ye dusuruyoruz (Diger testleri etkilememek adina)
+    requests.get(url + "/set_rate_limit?limit=20", verify=False)
+        
     import time
     from concurrent.futures import ThreadPoolExecutor
     
@@ -166,6 +169,9 @@ def test_rate_limiter():
     # 1 saniye icerisinde 45 istek gonder (Limiti 20)
     with ThreadPoolExecutor(max_workers=45) as executor:
         results = list(executor.map(lambda _: fetch_url(), range(45)))
+        
+    # Diger testlerin bozulmamasi icin limiti geri 1000 yapiyoruz
+    requests.get(url + "/set_rate_limit?limit=1000", verify=False)
         
     for r in results:
         if r.status_code == 429:

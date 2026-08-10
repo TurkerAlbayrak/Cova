@@ -139,8 +139,16 @@ void upload_handler(Request *req, Response *res) {
     // FILE *f = fopen(req->files[0].filename, "wb");
     // fwrite(req->files[0].data, 1, req->files[0].size, f);
     // fclose(f);
-    
     response_json(res, buf);
+}
+
+// V22: Testler icin rate limit degistirme endpointi
+void set_rate_limit_handler(Request *req, Response *res) {
+    const char *limit_str = request_param(req, "limit");
+    if (limit_str) {
+        g_app->max_requests_per_second = atoi(limit_str);
+    }
+    response_text(res, "Rate limit updated");
 }
 
 void jwt_protected_handler(Request *req, Response *res) {
@@ -187,8 +195,8 @@ int main(void) {
     // V20: JWT Secret Ayari
     app_set_jwt_secret(&app, "my_super_secret_key");
 
-    // V21: Rate Limiter Ayari (Saniyede max 20 istek, testler icin)
-    app_set_rate_limit(&app, 20);
+    // V21: Rate Limiter Ayari (Saniyede max 1000 istek, diger testleri bloklamamasi icin)
+    app_set_rate_limit(&app, 1000);
     app_use(&app, rate_limit_middleware);
     
     // 6. Define Routes
@@ -198,6 +206,7 @@ int main(void) {
     app_get(&app, "/ws", websocket_chat_handler);
     app_get(&app, "/login", login_handler);
     app_get(&app, "/protected", jwt_protected_handler);
+    app_get(&app, "/set_rate_limit", set_rate_limit_handler);
     
     // V22: File Upload route
     app_post(&app, "/upload", upload_handler);
