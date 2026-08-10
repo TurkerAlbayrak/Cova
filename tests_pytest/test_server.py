@@ -143,7 +143,7 @@ def test_jwt_middleware():
     assert "Unauthorized" in r4.text
 
 def test_rate_limiter():
-    """Test Rate Limiting (max 100 requests per second)"""
+    """Test Rate Limiting (max 20 requests per second)"""
     url = BASE_URL_HTTP
     try:
         requests.get(url, verify=False)
@@ -163,9 +163,9 @@ def test_rate_limiter():
     def fetch_url():
         return requests.get(url + "/", verify=False)
     
-    # 1 saniye icerisinde 115 istek gonder (Limiti 100) - Paralel gondererek zamandan tasarruf
-    with ThreadPoolExecutor(max_workers=115) as executor:
-        results = list(executor.map(lambda _: fetch_url(), range(115)))
+    # 1 saniye icerisinde 45 istek gonder (Limiti 20)
+    with ThreadPoolExecutor(max_workers=45) as executor:
+        results = list(executor.map(lambda _: fetch_url(), range(45)))
         
     for r in results:
         if r.status_code == 429:
@@ -174,7 +174,7 @@ def test_rate_limiter():
         else:
             success_count += 1
             
-    assert success_count <= 100, f"Expected max 100 successful requests, but got {success_count}"
+    assert success_count <= 20, f"Expected max 20 successful requests, but got {success_count}"
     assert too_many_requests_count >= 5, f"Expected at least 5 rate limited requests, but got {too_many_requests_count}"
 
 def test_file_upload():
