@@ -153,8 +153,9 @@ def test_rate_limiter():
     import time
     from concurrent.futures import ThreadPoolExecutor
     
-    # Wait for the next second to ensure a clean window
-    time.sleep(1.1)
+    # Wait for the beginning of the next second to avoid fixed-window reset
+    t = time.time()
+    time.sleep((int(t) + 1) - t + 0.1)
     
     success_count = 0
     too_many_requests_count = 0
