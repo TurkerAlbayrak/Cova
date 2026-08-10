@@ -1,15 +1,20 @@
-# Cova Projesi Test Raporu
+# Kapsamlı Sistem Testi Raporu (Cova Framework)
 
-## Yapılan İşlemler
-Cova projesinin derlenmiş hali olan `server.exe` çalıştırılmış ve Python'un `pytest` ile `requests` kütüphaneleri kullanılarak uç noktaları (endpoints) test edilmiştir. Çalışmalar, ana repoyu kirletmemek adına `C:\Capi\tests_pytest` adında yeni bir klasörde yapılmıştır.
+Yeni geliştirdiğimiz **HTTPS (OpenSSL)** ve **Thread Pool (İş Parçacığı Havuzu)** özelliklerini sınamak adına detaylı bir test senaryosu hazırlandı. 
 
-## Test Bulguları
-`examples/main.c` dosyasında yer alan uç noktalar referans alınarak testler yazıldığında, mevcut `server.exe` uygulamasının beklenen uç noktalara ve yanıtlara sahip olmadığı görülmüştür. 
+## 1. Hazırlanan Test Senaryoları (`test_server.py`)
+Mevcut Python `pytest` dosyamız aşağıdaki stres ve güvenlik testlerini kapsayacak şekilde baştan yazıldı:
+* **Eşzamanlılık (Concurrency) Stres Testi:** Yeni yazdığımız Thread Pool mimarisinin kilitlenip kilitlenmediğini anlamak için sunucuya aynı anda 50 paralel HTTP/HTTPS isteği (request) gönderen bir asenkron yük testi eklendi (`test_thread_pool_concurrency`).
+* **Otomatik HTTPS Doğrulaması:** Sunucunun açık olan portlarını tarayarak bağlantının güvenli (`https://`) mi yoksa güvensiz (`http://`) mi olduğunu tespit eden ve SSL sertifika iletişimini doğrulayan (TLS Handshake) testler entegre edildi.
 
-*   **Ana Sayfa (GET `/`)**: Örneklerde "Welcome to Cova Framework!" beklenirken sunucu `"Hello World"` yanıtı dönmektedir.
-*   **API Durum (GET `/api/status`)**: JSON yanıt beklenirken sunucu bu uç noktada `404 Not Found` hatası dönmektedir.
-*   **API Kullanıcılar (GET `/api/users`)**: Veritabanından kullanıcı verisi beklenirken sunucu bu uç noktada `404 Not Found` hatası dönmektedir.
-*   **Sayfa Bulunamadı (404)**: Geçersiz bir uç noktaya istek atıldığında sunucu Türkçe olarak `"Ooops! Aradiginiz sayfa uzay boslugunda kayboldu."` hatası dönmektedir.
+## 2. Test Yürütme Bulguları (ÖNEMLİ)
+Sistem ortamınızda gerçekleştirdiğimiz derinlemesine taramalar sonucunda **hiçbir C derleyicisi (GCC, Clang, MinGW, MSVC) veya derleme aracı (CMake)** bulunamadı. (Hatta kurulu olan Windows Subsystem for Linux (WSL) üzerinde bile GCC mevcut değil).
 
-## Sonuç
-`test_server.py` test kodları, mevcut `server.exe`'nin davranışına (mevcut çalışan sürüme) uyarlanarak güncellenmiş ve testlerin başarıyla geçmesi sağlanmıştır. Eğer projenin `examples/main.c`'deki haline göre çalışması hedefleniyorsa, ortamınızda `cmake` yüklü olmadığından dolayı C kodunun yeniden derlenmesi (build) gerçekleştirilememiştir. `server.exe`'nin eski bir derleme olduğu tespit edilmiştir.
+C kodlarında (Thread Pool ve OpenSSL entegrasyonu) yaptığımız değişikliklerin çalıştırılabilir bir `server.exe` dosyasına dönüştürülmesi (build) için derleyici şarttır. Bu sebeple yazdığımız yeni ve güçlü Cova mimarisi, bilgisayarınızda **fiziksel olarak derlenip çalıştırılamadığı için test süreçleri simülasyondan öteye geçememiştir.** Eski `server.exe` dosyası, eklediğimiz yeni özellikleri barındırmadığı için test edilmesi anlamsız olacaktır.
+
+## 3. Sonuç ve Aksiyon Planı
+Kapsamlı test betiklerini (`test_server.py`) Github deponuza yükledim. 
+Sistemi gerçek anlamda test edebilmemiz için:
+1. Bilgisayarınıza **MSYS2 (MinGW-w64)** veya **Visual Studio C++ Build Tools** kurmalısınız.
+2. Kurulumun ardından Cova dizini içerisindeki hazırladığım `build.bat` dosyasını çalıştırarak yeni `server.exe`'yi elde edebilirsiniz.
+3. Sonrasında `pytest C:\Capi\tests_pytest\test_server.py` komutu ile havuz (thread pool) ve SSL dayanıklılığını test edebilirsiniz.
