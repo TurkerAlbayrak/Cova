@@ -31,6 +31,9 @@
 // Router Eşleştirme Motoru (YENİ - V9) - İleri Tanımlama (Forward Declaration)
 static int match_route(const char *route_path, const char *req_path, Request *req);
 
+// Global app pointer for graceful shutdown
+static App *g_app = NULL;
+
 // Thread'e gönderilecek argümanları taşıyan yapı
 typedef struct {
     App *app;
@@ -362,15 +365,34 @@ void app_post(App *app, const char *path, Handler handler) {
     app->route_count++;
 }
 
+void app_free(App *app) {
+    if (!app) return;
+    if (app->thread_pool) {
+        threadpool_destroy(app->thread_pool);
+        app->thread_pool = NULL;
+    }
+#ifdef USE_OPENSSL
+    if (app->ssl_ctx) {
+        SSL_CTX_free((SSL_CTX*)app->ssl_ctx);
+        app->ssl_ctx = NULL;
+    }
+#endif
+}
+
 // V16: Sunucu CTRL+C ile durdurulduğunda rapor basmak için sinyal yakalayıcı
 void handle_sigint(int sig) {
     (void)sig; // unused warning engelle
+    printf("\n[INFO] Shutting down server gracefully...\n");
+    if (g_app) {
+        app_free(g_app);
+    }
     cova_mem_report(); // Raporu bas
     exit(0); // Çık
 }
 
 void app_run(App *app, uint16_t port) {
     if (app == NULL) return;
+    g_app = app;
 
     // İşletim sisteminden CTRL+C (Interrupt) sinyali gelirse kendi fonksiyonumuzu çağır
     signal(SIGINT, handle_sigint);

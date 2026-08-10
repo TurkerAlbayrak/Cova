@@ -114,3 +114,34 @@ void threadpool_add_task(ThreadPool *pool, ThreadFunc func, void *arg) {
     pthread_mutex_unlock(&pool->lock);
 #endif
 }
+
+void threadpool_destroy(ThreadPool *pool) {
+    if (!pool) return;
+    
+#ifdef _WIN32
+    EnterCriticalSection(&pool->lock);
+    pool->shutdown = 1;
+    WakeAllConditionVariable(&pool->notify);
+    LeaveCriticalSection(&pool->lock);
+    
+    for (int i = 0; i < pool->thread_count; i++) {
+        WaitForSingleObject(pool->threads[i], INFINITE);
+        CloseHandle(pool->threads[i]);
+    }
+    DeleteCriticalSection(&pool->lock);
+#else
+    pthread_mutex_lock(&pool->lock);
+    pool->shutdown = 1;
+    pthread_cond_broadcast(&pool->notify);
+    pthread_mutex_unlock(&pool->lock);
+    
+    for (int i = 0; i < pool->thread_count; i++) {
+        pthread_join(pool->threads[i], NULL);
+    }
+    pthread_mutex_destroy(&pool->lock);
+    pthread_cond_destroy(&pool->notify);
+#endif
+
+    cova_free(pool->threads);
+    cova_free(pool);
+}
