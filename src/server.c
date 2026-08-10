@@ -5,9 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include "cJSON.h"
 #include "memtrack.h"
 #include "threadpool.h"
+#include "rate_limiter.h"
 
 #ifdef USE_OPENSSL
 #include <openssl/ssl.h>
@@ -38,6 +40,7 @@ App *g_app = NULL;
 typedef struct {
     App *app;
     int client_socket;
+    char client_ip[46];
 } ClientArgs;
 
 // --- THREAD FONKSİYONU ---
@@ -50,6 +53,9 @@ void* handle_client_thread(void *arg) {
     ClientArgs *client_args = (ClientArgs*)arg;
     int client_socket = client_args->client_socket;
     App *app = client_args->app;
+    char client_ip[46];
+    strncpy(client_ip, client_args->client_ip, sizeof(client_ip));
+    client_ip[45] = '\0';
     
     // Argümanlar kopyalandı, belleği temizle (V16 - Kendi free fonksiyonumuz)
     cova_free(client_args);
@@ -101,6 +107,9 @@ void* handle_client_thread(void *arg) {
         }
         // Buffer'ı Request struct'ına çevir
         Request req;
+        memset(&req, 0, sizeof(Request));
+        strncpy(req.client_ip, client_ip, sizeof(req.client_ip));
+        req.client_ip[45] = '\0';
         request_parse(buffer, &req);
 
         // Eğer parse edilemeyen anlamsız bir istekse (V13 - 500 Hatası)
@@ -246,6 +255,9 @@ void app_init(App *app) {
     // JWT varsayilan bos
     memset(app->jwt_secret, 0, sizeof(app->jwt_secret));
     
+    // Rate Limit varsayilan kapali (0)
+    app->max_requests_per_second = 0;
+    
     // Thread pool'u hemen baslatma, app_run'da baslatilacak
     app->thread_pool = NULL;
     
@@ -383,6 +395,11 @@ void app_set_jwt_secret(App *app, const char *secret) {
     app->jwt_secret[sizeof(app->jwt_secret) - 1] = '\0';
 }
 
+void app_set_rate_limit(App *app, int max_req) {
+    if (!app) return;
+    app->max_requests_per_second = max_req;
+}
+
 void app_free(App *app) {
     if (!app) return;
     if (app->thread_pool) {
@@ -395,6 +412,8 @@ void app_free(App *app) {
         app->ssl_ctx = NULL;
     }
 #endif
+    
+    rate_limiter_cleanup(); // V21 Rate Limiter temizligi
 }
 
 // V16: Sunucu CTRL+C ile durdurulduğunda rapor basmak için sinyal yakalayıcı
@@ -489,6 +508,10 @@ void app_run(App *app, uint16_t port) {
         }
         args->client_socket = client_socket;
         args->app = app;
+        
+        // V21: IP adresini kopyala
+        strncpy(args->client_ip, inet_ntoa(client_addr.sin_addr), sizeof(args->client_ip));
+        args->client_ip[45] = '\0';
 
         // V17: Thread Pool kullanımı
         threadpool_add_task((ThreadPool*)app->thread_pool, (ThreadFunc)handle_client_thread, args);

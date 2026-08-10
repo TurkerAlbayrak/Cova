@@ -141,3 +141,30 @@ def test_jwt_middleware():
     r4 = requests.get(url + "/protected", headers=bad_headers, verify=False)
     assert r4.status_code == 401
     assert "Unauthorized" in r4.text
+
+def test_rate_limiter():
+    """Test Rate Limiting (max 10 requests per second)"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    import time
+    # Wait for the next second to ensure a clean window
+    time.sleep(1.1)
+    
+    success_count = 0
+    too_many_requests_count = 0
+    
+    # 1 saniye icerisinde 15 istek gonder (Limiti 10)
+    for _ in range(15):
+        r = requests.get(url + "/", verify=False)
+        if r.status_code == 429:
+            too_many_requests_count += 1
+            assert "Too Many Requests" in r.text
+        else:
+            success_count += 1
+            
+    assert success_count <= 10, f"Expected max 10 successful requests, but got {success_count}"
+    assert too_many_requests_count >= 5, f"Expected at least 5 rate limited requests, but got {too_many_requests_count}"

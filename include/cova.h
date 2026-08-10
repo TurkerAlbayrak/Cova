@@ -58,6 +58,9 @@ typedef struct {
 
     // V20: JWT
     char jwt_secret[128];
+    
+    // V21: Rate Limiting
+    int max_requests_per_second;
 } App;
 
 extern App *g_app;
@@ -88,5 +91,8 @@ void app_post(App *app, const char *path, Handler handler);
 
 // JWT Secret ayarlama
 void app_set_jwt_secret(App *app, const char *secret);
+
+// Rate Limiting (Saniyedeki Maksimum Istek)
+void app_set_rate_limit(App *app, int max_req);
 
 #endif // COVA_H

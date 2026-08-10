@@ -41,6 +41,9 @@ typedef struct {
     RequestHeader headers[MAX_HEADERS];
     int header_count;
 
+    // V21: Rate Limiting icin IP Adresi
+    char client_ip[46];
+
     // URL'deki (Path) parametreleri (/users/:id) tutmak için
     char param_buffer[256]; 
     RequestParam params[MAX_PARAMS];

@@ -6,7 +6,7 @@ echo Building Cova Framework with HTTPS (OpenSSL) and Thread Pool...
 :: GCC'nin PATH'de oldugunu varsayiyoruz.
 :: Windows'ta eger OpenSSL yoksa, OpenSSL olmadan derlemek icin -DUSE_OPENSSL ve -lssl -lcrypto parametrelerini siliniz.
 
-set SRC_FILES=src\server.c src\request.c src\response.c src\cJSON.c src\mime.c src\memtrack.c src\database.c src\sqlite3.c src\sha1.c src\base64.c src\websocket.c src\threadpool.c src\jwt.c
+set SRC_FILES=src\server.c src\request.c src\response.c src\cJSON.c src\mime.c src\memtrack.c src\database.c src\sqlite3.c src\sha1.c src\base64.c src\websocket.c src\threadpool.c src\jwt.c src\rate_limiter.c
 set INC_DIRS=-Iinclude
 set LIBS=-lws2_32 -lssl -lcrypto -lz
 

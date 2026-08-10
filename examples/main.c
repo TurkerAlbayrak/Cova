@@ -6,6 +6,7 @@
 #include "websocket.h"
 #include "memtrack.h"
 #include "jwt.h"
+#include "rate_limiter.h"
 
 // ---------------------------------------------------------
 // Application State
@@ -161,6 +162,10 @@ int main(void) {
 
     // V20: JWT Secret Ayari
     app_set_jwt_secret(&app, "my_super_secret_key");
+
+    // V21: Rate Limiter Ayari (Saniyede max 10 istek)
+    app_set_rate_limit(&app, 10);
+    app_use(&app, rate_limit_middleware);
     
     // 6. Define Routes
     app_get(&app, "/", hello_handler);
