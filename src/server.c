@@ -412,6 +412,10 @@ void app_run(App *app, uint16_t port) {
     if (app == NULL) return;
     g_app = app;
 
+    if (app->thread_pool == NULL) {
+        app->thread_pool = threadpool_create(16);
+    }
+
     // İşletim sisteminden CTRL+C (Interrupt) sinyali gelirse kendi fonksiyonumuzu çağır
     signal(SIGINT, handle_sigint);
 
