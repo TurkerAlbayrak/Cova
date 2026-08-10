@@ -61,7 +61,7 @@ static int net_send(Response *res, const void *buf, size_t len) {
     return send(res->client_socket, buf, (int)len, 0);
 }
 
-// HTTP durum kodlarına karşılık gelen metinler (Reason Phrases)
+// (Reason Phrases)
 static const char* http_status_text(int status_code) {
     switch (status_code) {
         case 200: return "OK";
@@ -96,7 +96,7 @@ void response_text(Response *res, const char *text) {
     int status = res->status_code;
     const char *reason = http_status_text(status);
     
-    // Özel header'ları string olarak birleştiriyoruz
+    // Special Header Concat
     char header_buf[2048] = {0};
     int offset = 0;
     for (int i = 0; i < res->header_count; i++) {
@@ -122,7 +122,7 @@ void response_text(Response *res, const char *text) {
         "Content-Length: %zu\r\n"
         "%s" // Connection header
         "%s" // Content-Encoding
-        "%s" // Özel header'lar buraya gelir
+        "%s" //  Special header's here 
         "\r\n", 
         status, reason, final_len, 
         res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", 
@@ -191,36 +191,34 @@ void response_json(Response *res, const char *json_str) {
 void response_json_object(Response *res, Json *json) {
     if (!res || !json) return;
     
-    // cJSON nesnesini okunabilir bir string'e (char array) çevirir
     char *json_str = cJSON_PrintUnformatted(json);
     if (json_str) {
-        response_json(res, json_str); // Mevcut fonksiyonumuzu kullanıyoruz
-        cova_free(json_str); // cJSON_Print cova_malloc kullanır, cova_free ile silmeliyiz!
+        response_json(res, json_str); 
+        cova_free(json_str); 
     }
 }
 
 void response_file(Response *res, const char *filepath) {
     if (!res || !filepath) return;
 
-    FILE *file = fopen(filepath, "rb"); // Dosyayı ikili (binary) modda oku
+    FILE *file = fopen(filepath, "rb");
     if (!file) {
         response_status(res, 404);
         response_text(res, "File Not Found");
         return;
     }
     
-    // Dosya boyutunu hesapla
+
     fseek(file, 0, SEEK_END);
     long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET); // Başa sar
+    fseek(file, 0, SEEK_SET); 
     
-    // MIME tipini bul (mime.h)
     const char *mime = get_mime_type(filepath);
     
     int status = res->status_code;
     const char *reason = http_status_text(status);
     
-    // Header'ları hazırla
+    
     char header_buf[2048] = {0};
     int offset = 0;
     for (int i = 0; i < res->header_count; i++) {
@@ -228,7 +226,7 @@ void response_file(Response *res, const char *filepath) {
                            "%s: %s\r\n", res->headers[i].name, res->headers[i].value);
     }
     
-    // HTTP Yanıt başlığını gönder
+    
     char buffer[4096];
     snprintf(buffer, sizeof(buffer),
         "HTTP/1.1 %d %s\r\n"
@@ -240,7 +238,6 @@ void response_file(Response *res, const char *filepath) {
         
     net_send(res, buffer, strlen(buffer));
     
-    // Dosya içeriğini 4KB (4096 byte) parçalar halinde ağa (Network) gönder
     size_t bytes_read;
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
         net_send(res, buffer, bytes_read);
@@ -312,8 +309,7 @@ void response_render(Response *res, const char *filepath, Json *data) {
     fseek(file, 0, SEEK_END);
     long fsize = ftell(file);
     fseek(file, 0, SEEK_SET);
-    
-    // HTML dosyasını tamamen belleğe al
+
     char *html_buf = cova_malloc(fsize + 1);
     if (!html_buf) { fclose(file); return; }
     
@@ -321,7 +317,6 @@ void response_render(Response *res, const char *filepath, Json *data) {
     html_buf[fsize] = '\0';
     fclose(file);
     
-    // Değişkenler metni uzatabileceği için x2 büyüklüğünde bir çıktı buffer'ı ayır (Geçici basit çözüm)
     size_t out_max = (fsize * 2) + 1024;
     char *out_buf = cova_malloc(out_max);
     if (!out_buf) { cova_free(html_buf); return; }
@@ -329,28 +324,26 @@ void response_render(Response *res, const char *filepath, Json *data) {
     size_t out_pos = 0;
     char *p = html_buf;
     
-    // Basit Template Engine Algoritması (Karakter Karakter Oku)
     while (*p) {
-        // "{{..." başlangıcı
+
         if (*p == '{' && *(p+1) == '{') {
-            p += 2; // "{{" işaretini atla
+            p += 2; 
             
             char key[128] = {0};
             int k = 0;
             
-            // "}}" kapanışını bulana kadar anahtar kelimeyi (key) oku
+
             while (*p && !(*p == '}' && *(p+1) == '}') && k < 127) {
-                if (*p != ' ') { // Boşlukları yoksay (Örn: {{ isim }} -> isim)
+                if (*p != ' ') { 
                     key[k++] = *p;
                 }
                 p++;
             }
             
             if (*p == '}' && *(p+1) == '}') {
-                p += 2; // "}}" işaretini atla
+                p += 2; 
             }
-            
-            // JSON verisinden anahtarı bul (Örn: "isim")
+        
             Json *item = cJSON_GetObjectItemCaseSensitive(data, key);
             if (item) {
                 if (cJSON_IsString(item)) {
@@ -370,7 +363,6 @@ void response_render(Response *res, const char *filepath, Json *data) {
                 }
             }
         } else {
-            // Normal HTML karakterini kopyala
             if (out_pos < out_max - 1) {
                 out_buf[out_pos++] = *p;
             }
@@ -379,10 +371,10 @@ void response_render(Response *res, const char *filepath, Json *data) {
     }
     out_buf[out_pos] = '\0';
     
-    // İşlenmiş HTML'i istemciye yolla
+
     response_html(res, out_buf);
     
-    // Bellek sızıntısını önle
+ 
     cova_free(html_buf);
     cova_free(out_buf);
 }

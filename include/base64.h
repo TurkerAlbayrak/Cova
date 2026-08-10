@@ -4,7 +4,7 @@
 
 char *base64_encode(const unsigned char *data, size_t input_length);
 
-// V20: JWT icin Base64URL
+// Base64URL encoding/decoding for JWT
 char *base64url_encode(const unsigned char *data, size_t input_length);
 unsigned char *base64url_decode(const char *data, size_t input_length, size_t *output_length);
 

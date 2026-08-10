@@ -138,7 +138,7 @@ void websocket_chat_handler(Request *req, Response *res) {
 
 void login_handler(Request *req, Response *res) {
     (void)req;
-    // Basit login simulasyonu (Gercekte db'den kullanici kontrol edilir)
+    // Login Simulation (Actual db user check should be done)
     char *token = jwt_generate("{\"user\":\"admin\"}", "my_super_secret_key");
     if (token) {
         char buf[1024];
@@ -151,7 +151,7 @@ void login_handler(Request *req, Response *res) {
     }
 }
 
-// V22: Dosya Yukleme (Multipart) Handler
+// File Upload Handler (Multipart)
 void upload_handler(Request *req, Response *res) {
     if (req->file_count == 0) {
         response_status(res, 400);
@@ -159,20 +159,21 @@ void upload_handler(Request *req, Response *res) {
         return;
     }
     
-    // Ilk yuklenen dosya hakkinda bilgi don
+    // Get file info from the first uploaded file
     char buf[512];
     snprintf(buf, sizeof(buf), 
         "{\"status\":\"success\", \"filename\":\"%s\", \"size\":%zu, \"content_type\":\"%s\"}",
         req->files[0].filename, req->files[0].size, req->files[0].content_type);
         
-    // (Opsiyonel) Dosyayi diske kaydetmek isterseniz:
+    // Optional: Save file to disk
     // FILE *f = fopen(req->files[0].filename, "wb");
     // fwrite(req->files[0].data, 1, req->files[0].size, f);
     // fclose(f);
     response_json(res, buf);
 }
 
-// V22: Testler icin rate limit degistirme endpointi
+
+// Set rate limit handler for testing
 void set_rate_limit_handler(Request *req, Response *res) {
     const char *limit_str = request_query(req, "limit");
     if (limit_str) {
@@ -203,7 +204,7 @@ void not_found_handler(Request *req, Response *res) {
 int main(void) {
     // 4. Init SQLite Database
     if (!db_init("cova_dev.db")) {
-        printf("Database connection failed!\n");
+        printf("[DATABASE] Connection failed!\n");
         return 1;
     } else {
         // V23: Automatically create table via ORM (Auto-Migrate)
@@ -255,7 +256,7 @@ int main(void) {
     // app_use_https(&app, "server.crt", "server.key");
     
     // 8. Start the Server
-    printf("Starting Cova Framework server...\n");
+    printf("[SYSTEM] Starting Cova Framework server...\n");
     app_run(&app, 8080);
     
     return 0;

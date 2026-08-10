@@ -12,33 +12,28 @@
     #include <sys/socket.h>
 #endif
 
-// WebSocket MAGIC GUID
 #define WS_MAGIC_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 int ws_handshake(Request *req, Response *res) {
     const char *ws_key = request_header(req, "Sec-WebSocket-Key");
     if (!ws_key) {
-        return 0; // WebSocket isteği değil
+        return 0; 
     }
     
-    // Key + Magic String birleştir
     char concat[256];
     snprintf(concat, sizeof(concat), "%s%s", ws_key, WS_MAGIC_GUID);
     
-    // SHA1 Hash
     SHA1_CTX ctx;
     unsigned char hash[20];
     SHA1Init(&ctx);
     SHA1Update(&ctx, (const unsigned char*)concat, strlen(concat));
     SHA1Final(hash, &ctx);
     
-    // Base64 Encode
     char *accept_key = base64_encode(hash, 20);
     if (!accept_key) {
         return 0;
     }
     
-    // Yanıt Gönder
     char buffer[512];
     snprintf(buffer, sizeof(buffer),
              "HTTP/1.1 101 Switching Protocols\r\n"
@@ -68,11 +63,11 @@ void ws_send_text(int client_socket, const char *text) {
         frame[3] = (unsigned char)(len & 0xFF);
         frame_size = 4;
     } else {
-        // Eğitim amaçlı: 64KB üzeri mesaj desteği yok
+
         return; 
     }
     
-    // Frame başlığını ve mesaj gövdesini gönder
+
     send(client_socket, (const char*)frame, frame_size, 0);
     send(client_socket, text, (int)len, 0);
 }
@@ -80,13 +75,12 @@ void ws_send_text(int client_socket, const char *text) {
 char* ws_read_frame(int client_socket) {
     unsigned char header[2];
     int r = recv(client_socket, (char*)header, 2, 0);
-    if (r <= 0) return NULL; // İstemci bağlantıyı kesti
+    if (r <= 0) return NULL; 
     
     int opcode = header[0] & 0x0F;
     int masked = (header[1] & 0x80) != 0;
     uint64_t payload_len = header[1] & 0x7F;
     
-    // Eğer tarayıcı bağlantıyı kapatma isteği (0x8) atarsa null dön
     if (opcode == 0x8) return NULL; 
     
     if (payload_len == 126) {
@@ -96,7 +90,6 @@ char* ws_read_frame(int client_socket) {
     } else if (payload_len == 127) {
         unsigned char extended[8];
         recv(client_socket, (char*)extended, 8, 0);
-        // Basitlik için en anlamlı 32 biti alıyoruz (4GB'a kadar)
         payload_len = (extended[4] << 24) | (extended[5] << 16) | (extended[6] << 8) | extended[7];
     }
     

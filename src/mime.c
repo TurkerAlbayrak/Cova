@@ -4,11 +4,11 @@
 const char* get_mime_type(const char *filename) {
     if (!filename) return "application/octet-stream";
     
-    // Dosya adındaki son noktayı (.) buluyoruz
+    // Find the last dot (.) in the filename
     const char *dot = strrchr(filename, '.');
     if (!dot) return "application/octet-stream";
     
-    // Uzantılara göre MIME tipini belirle
+    // Determine MIME type based on extension
     if (strcmp(dot, ".html") == 0) return "text/html";
     if (strcmp(dot, ".css") == 0) return "text/css";
     if (strcmp(dot, ".js") == 0) return "application/javascript";
@@ -19,6 +19,6 @@ const char* get_mime_type(const char *filename) {
     if (strcmp(dot, ".txt") == 0) return "text/plain";
     if (strcmp(dot, ".svg") == 0) return "image/svg+xml";
     
-    // Bilinmeyen bir uzantıysa varsayılan tip
+    // Default type for unknown extensions
     return "application/octet-stream";
 }

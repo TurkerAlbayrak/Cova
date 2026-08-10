@@ -8,10 +8,9 @@
 #include <pthread.h>
 #endif
 
-// İstatistik sayaçları
-static int current_allocs = 0; // Şu an bellekte olan obje sayısı
-static int total_allocs = 0;   // Toplam malloc çağrısı
-static int total_frees = 0;    // Toplam free çağrısı
+static int current_allocs = 0; //  count of objects currently in memory
+static int total_allocs = 0;   //  total malloc calls
+static int total_frees = 0;    //  total free calls
 static int mem_initialized = 0;
 
 #ifdef _WIN32
@@ -72,15 +71,15 @@ void cova_free(void *ptr) {
 
 void cova_mem_report(void) {
     printf("\n\n==========================================\n");
-    printf("[V16] MEMORY LEAK REPORT\n");
+    printf("          MEMORY LEAK REPORT\n");
     printf("==========================================\n");
-    printf("- Total Allocations (Malloc) : %d count\n", total_allocs);
-    printf("- Total Frees (Free): %d count\n", total_frees);
+    printf("- Total Allocations : %d blocks\n", total_allocs);
+    printf("- Total Frees       : %d blocks\n", total_frees);
     printf("------------------------------------------\n");
     if (current_allocs == 0) {
-        printf(">> RESULT: FLAWLESS! (0 Memory Leaks) <<\n");
+        printf(">> STATUS: SYSTEM FLAWLESS (0 LEAKS) <<\n");
     } else {
-        printf(">> SONUC: TEHLIKE! %d count bellek temizlenmedi! <<\n", current_allocs);
+        printf(">> WARNING: %d UNFREED MEMORY BLOCKS DETECTED <<\n", current_allocs);
     }
     printf("==========================================\n\n");
 }

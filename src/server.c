@@ -212,7 +212,7 @@ void* handle_client_thread(void *arg) {
 #endif
         }
 
-        printf("[REQUEST] Method: %s, Path: %s\n", http_method_str(req.method), req.path);
+        printf("[HTTP] %s %s\n", http_method_str(req.method), req.path);
         
         // Router Mantığı
         Response res;
@@ -384,7 +384,7 @@ int app_use_https(App *app, const char *cert_file, const char *key_file) {
     app->ssl_ctx = ctx;
     return 1;
 #else
-    printf("OpenSSL is not enabled in this build.\n");
+    printf("[SSL] OpenSSL is not enabled in this build.\n");
     return 0;
 #endif
 }
@@ -512,7 +512,7 @@ void app_free(App *app) {
 // V16: Sunucu CTRL+C ile durdurulduğunda rapor basmak için sinyal yakalayıcı
 void handle_sigint(int sig) {
     (void)sig; // unused warning engelle
-    printf("\n[INFO] Shutting down server gracefully...\n");
+    printf("\n[SYSTEM] Shutting down server gracefully...\n");
     if (g_app) {
         app_free(g_app);
     }
@@ -534,7 +534,7 @@ void app_run(App *app, uint16_t port) {
 #ifdef _WIN32
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        printf("WSAStartup failed.\n");
+        printf("[ERROR] WSAStartup failed.\n");
         exit(EXIT_FAILURE);
     }
 #endif
@@ -578,7 +578,7 @@ void app_run(App *app, uint16_t port) {
         exit(EXIT_FAILURE);
     }
 
-    printf("[INFO] Server listening on port %d...\n", port);
+    printf("[SYSTEM] Server listening on port %d...\n", port);
 
     while (1) {
         int client_socket;
