@@ -163,8 +163,8 @@ int main(void) {
     // V20: JWT Secret Ayari
     app_set_jwt_secret(&app, "my_super_secret_key");
 
-    // V21: Rate Limiter Ayari (Saniyede max 10 istek)
-    app_set_rate_limit(&app, 10);
+    // V21: Rate Limiter Ayari (Saniyede max 100 istek, testler icin)
+    app_set_rate_limit(&app, 100);
     app_use(&app, rate_limit_middleware);
     
     // 6. Define Routes
