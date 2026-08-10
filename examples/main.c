@@ -144,7 +144,7 @@ void upload_handler(Request *req, Response *res) {
 
 // V22: Testler icin rate limit degistirme endpointi
 void set_rate_limit_handler(Request *req, Response *res) {
-    const char *limit_str = request_param(req, "limit");
+    const char *limit_str = request_query(req, "limit");
     if (limit_str) {
         g_app->max_requests_per_second = atoi(limit_str);
     }
