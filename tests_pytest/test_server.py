@@ -174,6 +174,7 @@ def test_rate_limiter():
         results.append(fetch_url(session))
         
     # Diger testlerin bozulmamasi icin limiti geri 1000 yapiyoruz
+    time.sleep(1.1)
     requests.get(url + "/set_rate_limit?limit=1000", verify=False)
         
     for r in results:
