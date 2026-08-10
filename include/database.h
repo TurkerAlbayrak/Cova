@@ -17,4 +17,8 @@ bool db_execute(const char *sql);
 typedef struct cJSON Json;
 Json* db_query(const char *sql);
 
+// Raw SQLite baglantisini dondurur (ORM gibi gelismis moduller icin)
+struct sqlite3;
+struct sqlite3* db_get_instance(void);
+
 #endif // COVA_DATABASE_H
