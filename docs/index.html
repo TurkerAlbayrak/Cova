@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cova Framework Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Cova Framework</h2>
+                <span class="badge">v1.0.0</span>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="nav-title">Introduction</li>
+                    <li><a href="#getting-started" class="active">Getting Started</a></li>
+                    <li><a href="#architecture">Architecture</a></li>
+                    
+                    <li class="nav-title">Core Concepts</li>
+                    <li><a href="#routing">Routing & Requests</a></li>
+                    <li><a href="#responses">Responses</a></li>
+                    
+                    <li class="nav-title">Advanced Features</li>
+                    <li><a href="#orm">Database & ORM</a></li>
+                    <li><a href="#jwt">JWT Authentication</a></li>
+                    <li><a href="#websockets">WebSockets</a></li>
+                    <li><a href="#rate-limiting">Rate Limiting</a></li>
+                    
+                    <li class="nav-title">Production</li>
+                    <li><a href="#docker">Docker Deployment</a></li>
+                    <li><a href="#memory-tracking">Memory Tracking</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="content-header">
+                <h1>Documentation</h1>
+                <p>The high-performance, enterprise-grade Web Framework written in pure C.</p>
+            </div>
+
+            <section id="getting-started" class="doc-section">
+                <h2>Getting Started</h2>
+                <p>Cova is designed to be lightweight but powerful. You can run it on Windows, Linux, and macOS.</p>
+                
+                <h3>Installation via Docker (Recommended)</h3>
+                <pre><code>git clone https://github.com/TurkerAlbayrak/Cova.git
+cd Cova
+docker compose up --build</code></pre>
+                
+                <h3>Native Build</h3>
+                <p>Ensure you have GCC and OpenSSL installed.</p>
+                <pre><code># Windows
+.\build.bat
+
+# Linux
+make</code></pre>
+            </section>
+
+            <section id="architecture" class="doc-section">
+                <h2>Architecture</h2>
+                <p>Cova uses a custom <strong>ThreadPool</strong> for handling thousands of concurrent requests efficiently. Rather than spawning a new thread or process for every request (which is heavy), Cova maintains a pool of worker threads. When a request arrives, the main thread assigns it to an idle worker.</p>
+                <div class="alert alert-info">
+                    <strong>Tip:</strong> You can adjust the number of threads in the <code>threadpool_create(16)</code> call in <code>server.c</code> to optimize for your specific CPU cores.
+                </div>
+            </section>
+
+            <section id="routing" class="doc-section">
+                <h2>Routing & Requests</h2>
+                <p>Cova supports dynamic routing, path parameters, and query strings.</p>
+                <pre><code>void user_handler(Request *req, Response *res) {
+    // Access Path Parameter (e.g. /users/:id)
+    const char *user_id = request_param(req, "id");
+    
+    // Access Query String (e.g. ?sort=desc)
+    const char *sort_mode = request_query(req, "sort");
+    
+    response_json(res, "{\"status\": \"success\"}");
+}
+
+// In main:
+app_get(&app, "/users/:id", user_handler);</code></pre>
+            </section>
+
+            <section id="responses" class="doc-section">
+                <h2>Responses & Static Files</h2>
+                <p>You can send JSON, HTML, plain text, or serve entire static directories.</p>
+                <pre><code>// Serve a single file
+response_file(res, "public/index.html");
+
+// Serve an entire directory globally (in main)
+app_static(&app, "/assets", "./public/assets");</code></pre>
+            </section>
+
+            <section id="orm" class="doc-section">
+                <h2>The ORM (Object-Relational Mapping)</h2>
+                <p>The crown jewel of Cova is its C-native ORM. You do not need to write raw SQL strings.</p>
+                <pre><code>typedef struct {
+    int id;
+    char title[100];
+    int is_published;
+} Post;
+
+ORM_FIELD_MAP(Post) = {
+    ORM_INT_FIELD(Post, id, "PRIMARY KEY AUTOINCREMENT"),
+    ORM_STRING_FIELD(Post, title, 100, "NOT NULL"),
+    ORM_INT_FIELD(Post, is_published, "DEFAULT 0"),
+    ORM_END_FIELDS
+};
+
+ORM_MODEL(PostModel, "posts", Post, __orm_fields_Post);
+
+// Auto-migrate tables
+orm_auto_migrate(&PostModel);
+
+// Insert data
+Post new_post = {0, "Cova is awesome!", 1};
+orm_insert(&PostModel, &new_post);</code></pre>
+            </section>
+
+            <section id="jwt" class="doc-section">
+                <h2>JWT Authentication</h2>
+                <p>Secure your routes using JSON Web Tokens.</p>
+                <pre><code>// 1. Set secret in main()
+app_set_jwt_secret(&app, "super_secret");
+
+// 2. Generate token on login
+char *token = jwt_generate("{\"user\":\"admin\"}", "super_secret");
+
+// 3. Protect routes via middleware
+void secure_route(Request *req, Response *res) {
+    if (!jwt_middleware(req, res)) return;
+    response_text(res, "Secret Data");
+}</code></pre>
+            </section>
+
+            <section id="websockets" class="doc-section">
+                <h2>WebSockets</h2>
+                <p>Cova natively supports the WebSocket protocol for real-time applications.</p>
+                <pre><code>void chat_handler(Request *req, Response *res) {
+    if (ws_handshake(req, res)) {
+        while (1) {
+            char *msg = ws_read_frame(res->client_socket);
+            if (!msg) break;
+            
+            ws_send_text(res->client_socket, msg); // Echo
+            cova_free(msg);
+        }
+    }
+}</code></pre>
+            </section>
+            
+            <section id="rate-limiting" class="doc-section">
+                <h2>Rate Limiting</h2>
+                <p>Prevent brute-force and DDoS attacks globally across your app.</p>
+                <pre><code>// Limit to 100 requests per second per IP
+app_set_rate_limit(&app, 100);
+app_use(&app, rate_limit_middleware);</code></pre>
+            </section>
+
+            <section id="docker" class="doc-section">
+                <h2>Docker Deployment</h2>
+                <p>Our <code>Dockerfile</code> uses Alpine Linux for incredibly small image sizes. Run <code>docker compose up --build</code> to start the server. The <code>public/</code> folder is mounted as a volume so you can edit static files without rebuilding.</p>
+            </section>
+            
+            <section id="memory-tracking" class="doc-section">
+                <h2>Memory Tracking</h2>
+                <p>Cova overrides standard <code>malloc</code> and <code>free</code> with <code>cova_malloc</code> and <code>cova_free</code>. When the server gracefully shuts down (CTRL+C), it prints a complete Memory Leak report, helping you write safe C code.</p>
+            </section>
+
+            <footer>
+                <p>&copy; 2026 Cova Framework. Licensed under MIT.</p>
+            </footer>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

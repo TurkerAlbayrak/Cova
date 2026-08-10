@@ -1,78 +1,89 @@
-# Cova Framework
+<div align="center">
+  <img src="https://via.placeholder.com/150x150/1a1a1a/00ffcc?text=Cova" alt="Cova Logo" width="120" height="120">
+  <h1>Cova Framework</h1>
+  <p><strong>A high-performance, enterprise-grade Web Framework written in pure C.</strong></p>
 
-![Cova Logo](https://img.shields.io/badge/Cova-Framework-blue?style=for-the-badge&logo=c)
-![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![License](https://img.shields.io/badge/license-MIT-blue)
+  [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![C11 Standard](https://img.shields.io/badge/Language-C11-00599C.svg)](#)
+  [![Docker Ready](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](#)
+</div>
 
-<img width="1440" height="480" alt="image" src="https://github.com/user-attachments/assets/94fec5a4-54fc-432d-a1be-254f62be45b8" />
+<br>
 
+Cova Framework is an ultra-fast, lightweight, and incredibly feature-rich web framework designed for the C programming language. It brings modern web development paradigms (like ORMs, JWTs, and WebSockets) to the raw performance of C.
 
-Cova is a blazing fast, lightweight, and modern web framework written purely in C. Designed with zero external dependencies (other than OpenSSL for HTTPS), Cova brings the elegance of modern web frameworks to the raw performance of C.
-
-## 🚀 Features
-
-Cova is packed with enterprise-grade features, built from scratch to guarantee maximum performance and zero memory leaks.
-
-- **⚡ ThreadPool Concurrency:** Efficiently handles thousands of concurrent requests using a custom ThreadPool.
-- **🛡️ Custom ORM (Object-Relational Mapping):** Say goodbye to manual SQL queries! Map your C structs directly to SQLite tables using our powerful macro-based ORM.
-- **🔐 JWT Authentication:** Built-in middleware for issuing and verifying JSON Web Tokens.
-- **⛔ Rate Limiting:** Protect your endpoints from DDoS attacks with a robust Fixed Window rate limiter.
-- **🗜️ GZIP Compression:** Automatic response compression to save bandwidth.
-- **🔌 WebSockets:** Native support for real-time bidirectional communication.
-- **📁 Multipart File Uploads:** Easily handle `multipart/form-data` requests.
-- **🛠️ Memory Tracker:** A built-in memory leak detector ensures your application stays rock-solid in production.
+Whether you are building high-throughput microservices, IoT backends, or real-time applications, Cova provides the tools you need without the bloat.
 
 ---
 
-## 🛠️ Quick Start
+## ✨ Features
 
-### 1. Requirements
-- **Windows:** MSYS2 / MinGW-w64 (GCC)
-- **Linux/Mac:** GCC and Make
-- **OpenSSL:** Optional, for HTTPS support.
+- **⚡ ThreadPool Concurrency:** Efficiently handles thousands of concurrent requests using a custom, highly optimized ThreadPool.
+- **🛡️ Custom ORM (Object-Relational Mapping):** Say goodbye to manual SQL strings! Map your C structs directly to SQLite tables using our powerful macro-based ORM.
+- **🔐 JWT Authentication:** Built-in middleware for issuing and cryptographically verifying JSON Web Tokens.
+- **⛔ Rate Limiting:** Protect your endpoints from DDoS and brute-force attacks with a robust Fixed Window rate limiter.
+- **🗜️ GZIP Compression:** Automatic response compression to significantly reduce bandwidth usage.
+- **🔌 WebSockets:** Native support for real-time bidirectional communication.
+- **📁 Multipart File Uploads:** Easily parse and handle `multipart/form-data` file uploads.
+- **🛠️ Memory Tracker:** A built-in, thread-safe memory leak detector ensures your application stays rock-solid in production.
+- **🐳 Docker Native:** Containerize and deploy your application in seconds with the provided Docker setup.
 
-### 2. Build the Framework
-Use the provided build script to compile the framework and the example application.
+---
+
+## 🚀 Quick Start
+
+### Option 1: Docker (Recommended)
+The easiest way to get started is by using Docker. No dependencies required!
 
 ```bash
-# Windows
+# Clone the repository
+git clone https://github.com/TurkerAlbayrak/Cova.git
+cd Cova
+
+# Build and start the container
+docker compose up --build
+```
+Your server is now running at `http://localhost:8080`.
+
+### Option 2: Native Build
+If you prefer to build natively, ensure you have GCC and OpenSSL installed.
+
+```bash
+# Windows (Requires MSYS2/MinGW-w64)
 .\build.bat
 
 # Linux / MacOS
 make
-```
 
-### 3. Run the Server
-```bash
-./server.exe
+# Run the server
+./server
 ```
-
-The server will start listening on `http://localhost:8080`.
 
 ---
 
 ## 💻 Code Examples
 
-### Defining a Route & JSON Response
+### 1. Basic Routing & Responses
+Setting up a simple JSON API endpoint is incredibly straightforward.
 
 ```c
 void hello_handler(Request *req, Response *res) {
-    response_json(res, "{\"message\": \"Welcome to Cova Framework!\"}");
+    response_json(res, "{\"message\": \"Hello from Cova Framework!\"}");
 }
 
 int main(void) {
     App app;
     app_init(&app);
     
-    app_get(&app, "/", hello_handler);
+    app_get(&app, "/api/hello", hello_handler);
     app_run(&app, 8080);
     return 0;
 }
 ```
 
-### Using the Cova ORM
-
-Define your C struct and map it to a database table:
+### 2. Using the ORM
+Cova includes a powerful ORM that automatically converts your C structs into SQLite tables.
 
 ```c
 typedef struct {
@@ -81,56 +92,75 @@ typedef struct {
     int age;
 } User;
 
-// ORM Metadata Mapping
+// Define the fields and their SQL constraints
 ORM_FIELD_MAP(User) = {
     ORM_INT_FIELD(User, id, "PRIMARY KEY AUTOINCREMENT"),
     ORM_STRING_FIELD(User, username, 50, "NOT NULL UNIQUE"),
     ORM_INT_FIELD(User, age, "DEFAULT 18"),
     ORM_END_FIELDS
 };
+
+// Register the model
 ORM_MODEL(UserModel, "users", User, __orm_fields_User);
-```
 
-Inserting and Querying data:
-```c
-// Auto-migrate (Creates table if it doesn't exist)
-orm_auto_migrate(&UserModel);
-
-// Insert a new record
-User new_user = {0, "cova_admin", 35};
-orm_insert(&UserModel, &new_user);
-
-// Find by ID (directly into a struct!)
-User u;
-if (orm_find_by_id(&UserModel, 1, &u)) {
-    printf("Found User: %s (Age: %d)\n", u.username, u.age);
+void create_user_handler(Request *req, Response *res) {
+    User new_user = {0, "john_doe", 28};
+    if (orm_insert(&UserModel, &new_user)) {
+        printf("Inserted User ID: %d\n", new_user.id);
+        response_text(res, "User created successfully!");
+    }
 }
 ```
 
-### WebSocket Echo Server
+### 3. JWT & Middlewares
+Protect your sensitive endpoints easily using the built-in JWT middleware.
+
 ```c
-void websocket_chat_handler(Request *req, Response *res) {
-    if (!ws_handshake(req, res)) return;
+void protected_handler(Request *req, Response *res) {
+    // This route is now protected! Only valid JWTs can enter.
+    if (!jwt_middleware(req, res)) return;
     
-    while (1) {
-        char *msg = ws_read_frame(res->client_socket);
-        if (!msg) break;
+    response_text(res, "Welcome to the protected zone!");
+}
+
+int main(void) {
+    App app;
+    app_init(&app);
+    app_set_jwt_secret(&app, "my_super_secret_key");
+    
+    app_get(&app, "/api/protected", protected_handler);
+    app_run(&app, 8080);
+}
+```
+
+### 4. WebSockets
+Real-time chat? Data streaming? Cova handles WebSockets natively.
+
+```c
+void websocket_handler(Request *req, Response *res) {
+    if (ws_handshake(req, res)) {
+        printf("Client connected via WebSocket!\n");
+        ws_send_text(res->client_socket, "Welcome to the Cova WS Server!");
         
-        char reply[512];
-        snprintf(reply, sizeof(reply), "Server Echo: %s", msg);
-        ws_send_text(res->client_socket, reply);
-        
-        cova_free(msg);
+        while (1) {
+            char *msg = ws_read_frame(res->client_socket);
+            if (!msg) break; // Client disconnected
+            
+            // Echo the message back
+            ws_send_text(res->client_socket, msg);
+            cova_free(msg);
+        }
     }
 }
 ```
 
 ---
 
-## 🏗️ Architecture
-Cova is built around a non-blocking network socket architecture. When a client connects, the request is dispatched to a **ThreadPool** worker. This ensures the main server loop is never blocked, allowing for massive concurrency. 
+## 📚 Documentation
 
-All memory allocations are routed through `cova_malloc` and `cova_free`. Upon graceful shutdown (CTRL+C), the **Memory Tracker** generates a detailed report, guaranteeing a leak-free environment.
+For an in-depth guide on every feature, API reference, and advanced tutorials, please visit our **[Official Documentation Site](./docs/index.html)** (Open `docs/index.html` in your browser).
+
+---
 
 ## 📄 License
-This project is licensed under the MIT License.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
