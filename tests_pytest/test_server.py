@@ -163,12 +163,15 @@ def test_rate_limiter():
     success_count = 0
     too_many_requests_count = 0
     
-    def fetch_url():
-        return requests.get(url + "/", verify=False)
+    def fetch_url(session):
+        return session.get(url + "/")
     
-    # 1 saniye icerisinde 45 istek gonder (Limiti 20)
-    with ThreadPoolExecutor(max_workers=45) as executor:
-        results = list(executor.map(lambda _: fetch_url(), range(45)))
+    # TCP baglanti gecikmesi yasamamak icin ayni oturum uzerinden hizlica 45 istek atiyoruz
+    session = requests.Session()
+    session.verify = False
+    results = []
+    for _ in range(45):
+        results.append(fetch_url(session))
         
     # Diger testlerin bozulmamasi icin limiti geri 1000 yapiyoruz
     requests.get(url + "/set_rate_limit?limit=1000", verify=False)
