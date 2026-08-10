@@ -20,8 +20,8 @@ def wait_for_server(url, timeout=5):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_server():
-    # Bu testin calismasi icin server'in (server.exe) calisiyor olmasi gerekir.
-    # Eger HTTPS aciksa BASE_URL_HTTPS, degilse BASE_URL_HTTP kontrol edilir.
+    # The server (server.exe) must be running for these tests.
+    # If HTTPS is enabled, it checks BASE_URL_HTTPS, else BASE_URL_HTTP.
     if not (wait_for_server(BASE_URL_HTTP) or wait_for_server(BASE_URL_HTTPS)):
         pytest.fail("Server did not start or respond in time.")
 
@@ -50,7 +50,7 @@ def fetch_url(url):
 
 def test_thread_pool_concurrency():
     """Test Thread Pool by sending 50 simultaneous requests"""
-    # Sunucunun HTTPS olup olmadigini anla
+    # Detect if server is HTTPS
     url = BASE_URL_HTTP + "/"
     try:
         requests.get(url, verify=False)
@@ -65,8 +65,8 @@ def test_thread_pool_concurrency():
         for future in concurrent.futures.as_completed(futures):
             results.append(future.result())
             
-    # Tum istekler 200 donmeli, thread pool kitlenmemeli
-    assert results.count(200) == num_requests, f"Gecersiz sonuclar: {results}"
+    # All requests should return 200, thread pool should not lock up
+    assert results.count(200) == num_requests, f"Invalid results: {results}"
 
 def test_keep_alive():
     """Test Connection Keep-Alive by sending multiple requests on the same socket"""
@@ -79,11 +79,11 @@ def test_keep_alive():
     session = requests.Session()
     session.verify = False
     
-    # Session, Connection: keep-alive gonderir ve TCP soketini acik tutar
+    # Session sends Connection: keep-alive and keeps TCP socket open
     for i in range(5):
         r = session.get(url + "/")
         assert r.status_code == 200
-        # Sunucunun keep-alive olarak yanit verdigini dogrula
+        # Verify that server responds with keep-alive
         assert r.headers.get("Connection", "").lower() == "keep-alive"
         
     session.close()
@@ -96,17 +96,17 @@ def test_gzip_compression():
     except:
         url = BASE_URL_HTTPS
         
-    # Gzip istedigimizi belirtiyoruz
+    # Requesting gzip compression
     headers = {"Accept-Encoding": "gzip"}
     r = requests.get(url + "/", headers=headers, verify=False)
     
     assert r.status_code == 200
-    # Python requests kutuphanesi gzip'i otomatik olarak cozer, ama header'da geldi mi kontrol edebiliriz
-    # Veya requests otomatik parse edince Content-Encoding header'ini seffafca gizleyebilir,
-    # raw urllib3 response uzerinden kontrol etmek daha saglikli:
+    # The python requests library automatically decodes gzip, but we can check if it arrived in headers
+    # Or, requests might hide the Content-Encoding transparently when parsed.
+    # Checking raw urllib3 response is safer:
     assert r.raw.headers.get("Content-Encoding") == "gzip" or r.headers.get("Content-Encoding") == "gzip", "Gzip header was not returned!"
     
-    # SIKISTIRMA DOGRULAMASI: Gelen verinin bozulmadigini teyit et
+    # VERIFICATION: Confirm that the payload is not corrupted
     assert len(r.text) > 0
 
 def test_jwt_middleware():
@@ -117,25 +117,25 @@ def test_jwt_middleware():
     except:
         url = BASE_URL_HTTPS
         
-    # 1. Korumali sayfaya tokensiz girmeyi dene (401 Bekleniyor)
+    # 1. Attempt to access protected route without token (Expect 401)
     r1 = requests.get(url + "/protected", verify=False)
     assert r1.status_code == 401
     assert "Unauthorized" in r1.text
     
-    # 2. Login ol ve JWT Token al
+    # 2. Login and retrieve JWT Token
     r2 = requests.get(url + "/login", verify=False)
     assert r2.status_code == 200
     token = r2.json().get("token")
     assert token is not None
     assert len(token) > 20
     
-    # 3. Korumali sayfaya token ile girmeyi dene (200 Bekleniyor)
+    # 3. Attempt to access protected route with valid token (Expect 200)
     headers = {"Authorization": f"Bearer {token}"}
     r3 = requests.get(url + "/protected", headers=headers, verify=False)
     assert r3.status_code == 200
     assert "Welcome" in r3.text
     
-    # 4. Korumali sayfaya GECERSIZ (Bozuk) token ile girmeyi dene (401 Bekleniyor)
+    # 4. Attempt to access protected route with INVALID token (Expect 401)
     bad_token = token[:-1] + ("A" if token[-1] != "A" else "B")
     bad_headers = {"Authorization": f"Bearer {bad_token}"}
     r4 = requests.get(url + "/protected", headers=bad_headers, verify=False)
@@ -150,7 +150,7 @@ def test_rate_limiter():
     except:
         url = BASE_URL_HTTPS
         
-    # Sadece bu test icin limiti 20'ye dusuruyoruz (Diger testleri etkilememek adina)
+    # Lower limit to 20 for this test only (to avoid breaking other tests)
     requests.get(url + "/set_rate_limit?limit=20", verify=False)
         
     import time
@@ -166,14 +166,14 @@ def test_rate_limiter():
     def fetch_url(session):
         return session.get(url + "/")
     
-    # TCP baglanti gecikmesi yasamamak icin ayni oturum uzerinden hizlica 45 istek atiyoruz
+    # Fire 45 rapid requests on same TCP session to avoid connection delays
     session = requests.Session()
     session.verify = False
     results = []
     for _ in range(45):
         results.append(fetch_url(session))
         
-    # Diger testlerin bozulmamasi icin limiti geri 1000 yapiyoruz
+    # Restore limit to 1000 so other tests do not fail
     time.sleep(1.1)
     requests.get(url + "/set_rate_limit?limit=1000", verify=False)
         

@@ -3,11 +3,11 @@
 
 #include <stddef.h>
 
-// Kendi Malloc ve Free fonksiyonlarımız
+// Custom Malloc and Free functions
 void* cova_malloc(size_t size);
 void cova_free(void *ptr);
 
-// Sunucu kapandığında raporu basan fonksiyon
+// Function to print the memory leak report upon server shutdown
 void cova_mem_report(void);
 
 #endif // COVA_MEMTRACK_H

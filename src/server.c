@@ -31,21 +31,21 @@
 #endif
 #endif
 
-// Router Eşleştirme Motoru (YENİ - V9) - İleri Tanımlama (Forward Declaration)
+// Router Matching Engine (NEW - V9) - Forward Declaration
 static int match_route(const char *route_path, const char *req_path, Request *req);
 
 // Global app pointer for graceful shutdown and JWT access
 App *g_app = NULL;
 
-// Thread'e gönderilecek argümanları taşıyan yapı
+// Structure carrying arguments to be sent to Thread
 typedef struct {
     App *app;
     int client_socket;
     char client_ip[46];
 } ClientArgs;
 
-// --- THREAD FONKSİYONU ---
-// Her gelen bağlantı (client) kendi bağımsız kanalında (thread) bu fonksiyonu çalıştırır.
+// --- THREAD FUNCTION ---
+// Every incoming connection (client) runs this function in its own independent thread.
 #ifdef _WIN32
 DWORD WINAPI handle_client_thread(LPVOID arg) {
 #else
@@ -58,10 +58,10 @@ void* handle_client_thread(void *arg) {
     strncpy(client_ip, client_args->client_ip, sizeof(client_ip));
     client_ip[45] = '\0';
     
-    // Argümanlar kopyalandı, belleği temizle (V16 - Kendi free fonksiyonumuz)
+    // Arguments copied, clear memory (V16 - Our custom free function)
     cova_free(client_args);
 
-    // Zaman Aşımı (Timeout) ayarı (5 saniye)
+    // Timeout setting (5 seconds)
 #ifdef _WIN32
     DWORD timeout = 5000;
     setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
@@ -91,7 +91,7 @@ void* handle_client_thread(void *arg) {
 #endif
 
     while (1) {
-        int header_buf_size = 8192; // Max header boyutu
+        int header_buf_size = 8192; // Max header size
         char *header_buffer = (char*)cova_malloc(header_buf_size);
         memset(header_buffer, 0, header_buf_size);
         
@@ -120,10 +120,10 @@ void* handle_client_thread(void *arg) {
         
         if (total_read <= 0 || !header_ended) {
             cova_free(header_buffer);
-            break; // Bağlantı kapandı veya Timeout oldu veya geçersiz istek
+            break; // Connection closed, Timeout occurred, or invalid request
         }
 
-        // Content-Length'i bul
+        // Find Content-Length
         int content_length = 0;
         char *cl_ptr = strstr(header_buffer, "Content-Length:");
         if (!cl_ptr) cl_ptr = strstr(header_buffer, "content-length:");
@@ -131,7 +131,7 @@ void* handle_client_thread(void *arg) {
             content_length = atoi(cl_ptr + 15);
         }
         
-        // V22: Limit Kontrolü
+        // V22: Limit Control
         if (content_length > (int)app->max_body_size) {
             Response res;
             res.client_socket = client_socket;
@@ -174,7 +174,7 @@ void* handle_client_thread(void *arg) {
             body_data[content_length] = '\0';
         }
 
-        // Buffer'ı Request struct'ına çevir
+        // Convert Buffer to Request struct
         Request req;
         memset(&req, 0, sizeof(Request));
         strncpy(req.client_ip, client_ip, sizeof(req.client_ip));
@@ -184,13 +184,13 @@ void* handle_client_thread(void *arg) {
         req.body_data = body_data;
         req.body_len = content_length;
         if (content_length > 0) {
-            req.body = (char*)body_data; // Eski yapi icin (JSON)
+            req.body = (char*)body_data; // For old structure (JSON)
         }
         
         // V22: Multipart Parse
         multipart_parse(&req);
 
-        // Eğer parse edilemeyen anlamsız bir istekse (V13 - 500 Hatası)
+        // If it is a meaningless request that cannot be parsed (V13 - 500 Error)
         if (req.method == HTTP_UNKNOWN) {
             Response res;
             res.client_socket = client_socket;

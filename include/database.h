@@ -4,20 +4,20 @@
 #include "cJSON.h"
 #include <stdbool.h>
 
-// Veritabanına bağlanır (Dosya yoksa oluşturur)
+// Connects to the database (Creates file if it doesn't exist)
 bool db_init(const char *filename);
 
-// Veritabanı bağlantısını kapatır
+// Closes the database connection
 void db_close(void);
 
-// INSERT, UPDATE, DELETE, CREATE TABLE gibi sonuç döndürmeyen komutları çalıştırır
+// Executes statements that don't return results (INSERT, UPDATE, DELETE, CREATE TABLE, etc.)
 bool db_execute(const char *sql);
 
-// SELECT sorgusu çalıştırır, sonuçları bizim JSON Array (Liste) formatımıza dönüştürüp döndürür!
+// Executes a SELECT query, returning the results as a JSON Array
 typedef struct cJSON Json;
 Json* db_query(const char *sql);
 
-// Raw SQLite baglantisini dondurur (ORM gibi gelismis moduller icin)
+// Returns the raw SQLite connection instance (for advanced modules like ORM)
 struct sqlite3;
 struct sqlite3* db_get_instance(void);
 

@@ -8,40 +8,40 @@ typedef struct {
     const char *value;
 } ResponseHeader;
 
-// Handler fonksiyonlarında yanıt göndermek için kullandığımız obje
+// Object used to send a response in handler functions
 typedef struct {
     int client_socket;
-    void *ssl; // V17: HTTPS için SSL nesnesi
-    int keep_alive; // V18: Keep-Alive bayrağı
-    int use_gzip; // V19: Gzip bayrağı
-    int status_code; // Varsayılan olarak 200 olacak
+    void *ssl; // V17: SSL object for HTTPS
+    int keep_alive; // V18: Keep-Alive flag
+    int use_gzip; // V19: Gzip flag
+    int status_code; // Defaults to 200
     ResponseHeader headers[MAX_RESPONSE_HEADERS];
     int header_count;
 } Response;
 
-// HTTP durum kodunu (Status Code) ayarlar
+// Sets the HTTP status code
 void response_status(Response *res, int status_code);
 
-// Yanıta özel bir Header ekler
+// Adds a custom header to the response
 void response_header(Response *res, const char *name, const char *value);
 
-// Metin (Plain Text) yanıtı gönderir
+// Sends a Plain Text response
 void response_text(Response *res, const char *text);
 
-// JSON formatında string yanıt gönderir
+// Sends a JSON formatted string response
 void response_json(Response *res, const char *json_str);
 
-// cJSON objesini otomatik string'e çevirip JSON yanıtı gönderir
+// Automatically converts a cJSON object to string and sends a JSON response
 typedef struct cJSON Json;
 void response_json_object(Response *res, Json *json);
 
-// Diskteki bir dosyayı (HTML, CSS, Image) istemciye gönderir
+// Sends a file from disk (HTML, CSS, Image) to the client
 void response_file(Response *res, const char *filepath);
 
-// Dinamik HTML string gönderir
+// Sends a dynamic HTML string
 void response_html(Response *res, const char *html_str);
 
-// HTML Template dosyasını okur, {{degisken}} kısımlarını JSON ile doldurur
+// Reads an HTML Template file, populates {{variable}} parts with JSON data
 void response_render(Response *res, const char *filepath, Json *data);
 
 #endif // COVA_RESPONSE_H

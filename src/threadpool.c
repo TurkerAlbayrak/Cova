@@ -142,7 +142,7 @@ void threadpool_destroy(ThreadPool *pool) {
     pthread_cond_destroy(&pool->notify);
 #endif
 
-    // V21: Kuyrukta kalan ve islenmeyen gorevleri (ve argumanlarini) temizle
+    // Clean up unprocessed tasks left in the queue
     ThreadTask *current = pool->head;
     while (current) {
         ThreadTask *next = current->next;

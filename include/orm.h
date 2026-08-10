@@ -4,31 +4,31 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// Desteklenen veri tipleri
+// Supported data types
 typedef enum {
     ORM_TYPE_INT,
     ORM_TYPE_STRING,
     ORM_TYPE_FLOAT
 } OrmFieldType;
 
-// Bir tablo sutununu (C struct alani) temsil eden yapi
+// Represents a database table column (C struct field)
 typedef struct {
-    const char *name;      // Sutun adi (Struct alani adi)
-    OrmFieldType type;     // Veri tipi
-    size_t offset;         // Struct icindeki hafiza ofseti (offsetof)
-    size_t size;           // Veri boyutu (stringler icin maksimum uzunluk vb.)
-    const char *sql_opts;  // "PRIMARY KEY AUTOINCREMENT" gibi SQL kisitlamalari
+    const char *name;      // Column name (Struct field name)
+    OrmFieldType type;     // Data type
+    size_t offset;         // Memory offset in struct (offsetof)
+    size_t size;           // Data size (max length for strings, etc.)
+    const char *sql_opts;  // SQL constraints like "PRIMARY KEY AUTOINCREMENT"
 } OrmField;
 
-// Bir veritabani tablosunu (C struct) temsil eden model yapisi
+// Represents a database table (C struct model)
 typedef struct {
     const char *table_name;
     size_t struct_size;
-    OrmField *fields;      // Son elemani name=NULL olan dizi
+    OrmField *fields;      // Array ending with name=NULL
 } OrmModel;
 
 // ==========================================
-// ORM MAKROLARI (GELİŞTİRİCİ DENEYİMİ İÇİN)
+// ORM MACROS (DEVELOPER EXPERIENCE)
 // ==========================================
 
 #define ORM_FIELD_MAP(StructName) \
@@ -53,22 +53,22 @@ typedef struct {
     }
 
 // ==========================================
-// ORM VERITABANI ISLEMLERI
+// ORM DATABASE OPERATIONS
 // ==========================================
 
-// Tabloyu eger yoksa otomatik olusturur
+// Automatically creates the table if it does not exist
 bool orm_auto_migrate(OrmModel *model);
 
-// Yeni bir kayit ekler (id degeri autoincrement ise, struct icine yeni ID'yi geri yazar)
+// Inserts a new record (if id is autoincrement, writes the new ID back into the struct)
 bool orm_insert(OrmModel *model, void *struct_ptr);
 
-// ID'ye gore arama yapar ve sonucu out_struct_ptr icerisine doldurur
+// Searches by ID and populates out_struct_ptr with the result
 bool orm_find_by_id(OrmModel *model, int id, void *out_struct_ptr);
 
-// Kaydi gunceller (ID alani uzerinden)
+// Updates the record (using the ID field)
 bool orm_update(OrmModel *model, void *struct_ptr);
 
-// Kaydi siler (ID alani uzerinden)
+// Deletes the record (using the ID field)
 bool orm_delete(OrmModel *model, int id);
 
 #endif // COVA_ORM_H

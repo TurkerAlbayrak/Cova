@@ -3,6 +3,7 @@
 #include <string.h>
 #include "cJSON.h"
 #include "database.h"
+#include "orm.h"
 #include "websocket.h"
 #include "memtrack.h"
 #include "jwt.h"
@@ -57,21 +58,52 @@ void api_status_handler(Request *req, Response *res) {
     cJSON_Delete(res_json); // Prevent memory leaks
 }
 
+// ==========================================
+// ORM MODEL TANIMLAMASI
+// ==========================================
+typedef struct {
+    int id;
+    char username[50];
+    int age;
+} User;
+
+ORM_FIELD_MAP(User) = {
+    ORM_INT_FIELD(User, id, "PRIMARY KEY AUTOINCREMENT"),
+    ORM_STRING_FIELD(User, username, 50, "NOT NULL UNIQUE"),
+    ORM_INT_FIELD(User, age, "DEFAULT 18"),
+    ORM_END_FIELDS
+};
+
+ORM_MODEL(UserModel, "users", User, __orm_fields_User);
+
 /*
- * SQLite Integration Route
- * Demonstrates database querying and returning JSON arrays.
+ * ORM Integration Route
+ * Demonstrates database querying using the new ORM layer.
  */
 void db_users_handler(Request *req, Response *res) {
-    (void)req;
-    const char *sql = "SELECT * FROM users LIMIT 10;";
-    Json *rows = db_query(sql);
-    
-    if (rows) {
-        response_json_object(res, rows);
-        cJSON_Delete(rows);
+    const char *id_str = request_query(req, "id");
+    if (id_str) {
+        User u;
+        if (orm_find_by_id(&UserModel, atoi(id_str), &u)) {
+            char buf[256];
+            snprintf(buf, sizeof(buf), "{\"id\": %d, \"username\": \"%s\", \"age\": %d}", u.id, u.username, u.age);
+            response_json(res, buf);
+        } else {
+            response_status(res, 404);
+            response_json(res, "{\"error\": \"User not found\"}");
+        }
     } else {
-        response_status(res, 500);
-        response_json(res, "{\"error\": \"Database error or empty table\"}");
+        // Aksi halde raw db_query kullanarak tum tabloyu dondur
+        const char *sql = "SELECT * FROM users LIMIT 10;";
+        Json *rows = db_query(sql);
+        
+        if (rows) {
+            response_json_object(res, rows);
+            cJSON_Delete(rows);
+        } else {
+            response_status(res, 500);
+            response_json(res, "{\"error\": \"Database error or empty table\"}");
+        }
     }
 }
 
@@ -119,8 +151,6 @@ void login_handler(Request *req, Response *res) {
     }
 }
 
-// (Removed unprotected protected_handler)
-
 // V22: Dosya Yukleme (Multipart) Handler
 void upload_handler(Request *req, Response *res) {
     if (req->file_count == 0) {
@@ -152,7 +182,7 @@ void set_rate_limit_handler(Request *req, Response *res) {
 }
 
 void jwt_protected_handler(Request *req, Response *res) {
-    // Route seviyesinde JWT Middleware cagirimi
+    // JWT Middleware call at route level
     if (!jwt_middleware(req, res)) return;
     
     response_text(res, "Welcome to the protected zone, admin!");
@@ -171,14 +201,23 @@ void not_found_handler(Request *req, Response *res) {
 // Main Entry Point
 // ---------------------------------------------------------
 int main(void) {
-    // 1. Initialize SQLite Database
-    if (!db_init("app.db")) {
-        printf("Failed to initialize database.\n");
+    // 4. Init SQLite Database
+    if (!db_init("cova_dev.db")) {
+        printf("Database connection failed!\n");
         return 1;
+    } else {
+        // V23: Automatically create table via ORM (Auto-Migrate)
+        orm_auto_migrate(&UserModel);
+        
+        // If table is empty, add test data using ORM
+        User test_user;
+        if (!orm_find_by_id(&UserModel, 1, &test_user)) {
+            User new_user = {0, "cova_admin", 35};
+            if (orm_insert(&UserModel, &new_user)) {
+                printf("[ORM] Successfully added test user. ID: %d\n", new_user.id);
+            }
+        }
     }
-    
-    db_execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL);");
-    db_execute("INSERT INTO users (name) VALUES ('Admin');"); // Sample data
 
     // 2. Initialize the Framework App
     app_init(&app);
@@ -192,10 +231,10 @@ int main(void) {
     // 5. Register Custom Error Handlers
     app_on_404(&app, not_found_handler);
 
-    // V20: JWT Secret Ayari
+    // V20: JWT Secret Configuration
     app_set_jwt_secret(&app, "my_super_secret_key");
 
-    // V21: Rate Limiter Ayari (Saniyede max 1000 istek, diger testleri bloklamamasi icin)
+    // V21: Rate Limiter Settings (Max 1000 requests per second, to not block other tests)
     app_set_rate_limit(&app, 1000);
     app_use(&app, rate_limit_middleware);
     

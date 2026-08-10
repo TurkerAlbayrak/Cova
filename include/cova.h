@@ -13,10 +13,10 @@
 #define MAX_ROUTES 100
 #define MAX_MIDDLEWARES 10
 
-// Endpoint'lere bağlayacağımız fonksiyonların tipi (Örn: void hello(Request *req, Response *res))
+// Type definition for endpoint handlers (e.g., void hello(Request *req, Response *res))
 typedef void (*Handler)(Request *req, Response *res);
 
-// Araya giren ara yazılım fonksiyonlarının tipi (1 dönerse devam eder, 0 dönerse kesilir)
+// Type definition for middleware functions (returns 1 to continue, 0 to abort)
 typedef int (*Middleware)(Request *req, Response *res);
 
 typedef struct {
@@ -25,13 +25,13 @@ typedef struct {
     Handler handler;
 } Route;
 
-// Statik dosya rotasını (Örn: "/public" -> "./public_folder") temsil eden yapı
+// Structure representing a static file route (e.g., "/public" -> "./public_folder")
 typedef struct {
     const char *url_prefix;
     const char *folder_path;
 } StaticRoute;
 
-// Tüm Framework uygulamasını temsil eden nesne
+// Object representing the entire Framework application
 typedef struct {
     Route routes[MAX_ROUTES];
     int route_count;
@@ -42,7 +42,7 @@ typedef struct {
     StaticRoute static_routes[10];
     int static_route_count;
     
-    // Global Hata Yöneticileri (V13)
+    // Global Error Handlers (V13)
     Handler not_found_handler; // 404
     Handler error_handler;     // 500
 
@@ -68,37 +68,37 @@ typedef struct {
 
 extern App *g_app;
 
-// App objesini başlatır
+// Initializes the App object
 void app_init(App *app);
 
-// Uygulamaya global bir Middleware (Ara Yazılım) ekler
+// Adds a global Middleware to the application
 void app_use(App *app, Middleware middleware);
 
-// Uygulamaya statik dosya dizini ekler (Örn: app_static(&app, "/public", "./public");)
+// Adds a static file directory (e.g., app_static(&app, "/public", "./public");)
 void app_static(App *app, const char *url_prefix, const char *folder_path);
 
-// HTTPS desteğini aktifleştirir ve sertifikaları yükler
+// Enables HTTPS support and loads certificates
 int app_use_https(App *app, const char *cert_file, const char *key_file);
 
-// Özel 404 (Sayfa Bulunamadı) sayfası tanımlar
+// Defines a custom 404 (Not Found) handler
 void app_on_404(App *app, Handler handler);
 
-// Özel 500 (Sunucu Hatası) sayfası tanımlar
+// Defines a custom 500 (Internal Server Error) handler
 void app_on_500(App *app, Handler handler);
 
 void app_run(App *app, uint16_t port);
 
-// Router API'leri
+// Router APIs
 void app_get(App *app, const char *path, Handler handler);
 void app_post(App *app, const char *path, Handler handler);
 
-// JWT Secret ayarlama
+// JWT Secret configuration
 void app_set_jwt_secret(App *app, const char *secret);
 
-// Rate Limiting (Saniyedeki Maksimum Istek)
+// Rate Limiting configuration (Max Requests Per Second)
 void app_set_rate_limit(App *app, int max_req);
 
-// Maksimum İstek Gövdesi Boyutu (Örn: Dosya Yükleme limiti)
+// Maximum Request Body Size (e.g., File Upload limit)
 void app_set_max_body_size(App *app, size_t max_size);
 
 #endif // COVA_H

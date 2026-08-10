@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-// HTTP Metotlarını temsil eden Enum yapısı
+// Enum representing HTTP Methods
 typedef enum {
     HTTP_GET,
     HTTP_POST,
@@ -32,17 +32,17 @@ typedef struct {
     char *value;
 } RequestQuery;
 
-// V22: Dosya yukleme (Multipart/form-data)
+// V22: File upload (Multipart/form-data)
 #define MAX_FILES 10
 typedef struct {
-    char name[64];       // Form alani adi (Örn: "profile_pic")
-    char filename[256];  // Orijinal dosya adi (Örn: "avatar.png")
-    char content_type[64]; // Örn: "image/png"
-    unsigned char *data; // Binary veri (pointer)
-    size_t size;         // Dosya boyutu
+    char name[64];       // Form field name (e.g., "profile_pic")
+    char filename[256];  // Original filename (e.g., "avatar.png")
+    char content_type[64]; // e.g., "image/png"
+    unsigned char *data; // Binary data pointer
+    size_t size;         // File size
 } UploadedFile;
 
-// Gelen HTTP İsteğini (Request) temsil eden Struct
+// Struct representing the incoming HTTP Request
 typedef struct {
     HttpMethod method;
     char *path;
@@ -50,49 +50,49 @@ typedef struct {
     char *raw_headers;
     char *body;
     
-    // V22: Binary (Dosya) body datasi
+    // V22: Binary (File) body data
     unsigned char *body_data;
     size_t body_len;
 
     RequestHeader headers[MAX_HEADERS];
     int header_count;
 
-    // V21: Rate Limiting icin IP Adresi
+    // V21: IP Address for Rate Limiting
     char client_ip[46];
 
-    // URL'deki (Path) parametreleri (/users/:id) tutmak için
+    // To hold dynamic URL parameters (/users/:id)
     char param_buffer[256]; 
     RequestParam params[MAX_PARAMS];
     int param_count;
 
-    // URL sonundaki (?q=Cova) Query parametreleri için
+    // To hold URL query parameters (?q=Cova)
     RequestQuery queries[MAX_QUERIES];
     int query_count;
 
-    // V22: Yüklenen dosyalar
+    // V22: Uploaded files
     UploadedFile files[MAX_FILES];
     int file_count;
 } Request;
 
-// İsteği metinden (string) alıp struct'a dönüştürür (ayrıştırır)
+// Parses the incoming string buffer into the Request struct
 void request_parse(char *buffer, Request *req);
 
-// Enum methodu tekrar string'e ("GET", "POST") dönüştürmek için yardımcı fonksiyon
+// Helper function to convert HttpMethod enum back to string ("GET", "POST")
 const char* http_method_str(HttpMethod method);
 
-// İstenilen bir header değerini döndürür (Büyük/küçük harf duyarsız)
+// Returns the value of a specific header (Case-insensitive)
 const char* request_header(Request *req, const char *name);
 
-// URL içerisindeki dinamik path parametresini döndürür (örn: "id")
+// Returns a dynamic path parameter from the URL (e.g., "id")
 const char* request_param(Request *req, const char *name);
 
-// URL sonundaki (?q=...) sorgu parametresini döndürür
+// Returns a query parameter from the URL (?q=...)
 const char* request_query(Request *req, const char *name);
 
-// cJSON yapısını framework'ümüze entegre ediyoruz
+// Forward declaration for cJSON
 typedef struct cJSON Json;
 
-// İstek gövdesindeki (Body) JSON verisini parse edip obje olarak döner
+// Parses the JSON body of the request and returns a Json object
 Json* request_json(Request *req);
 
 #endif // COVA_REQUEST_H

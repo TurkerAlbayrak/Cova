@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Yardimci fonksiyon: SQLite turunu ORM turune cevirir
+// Helper function: Converts ORM type to SQLite type
 static const char* orm_type_to_sql(OrmFieldType type) {
     switch(type) {
         case ORM_TYPE_INT: return "INTEGER";
@@ -63,7 +63,7 @@ bool orm_insert(OrmModel *model, void *struct_ptr) {
     
     sqlite3_stmt *stmt;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
-        printf("[ORM] Hata: %s\n", sqlite3_errmsg(db));
+        printf("[ORM] Error: %s\n", sqlite3_errmsg(db));
         return false;
     }
     
@@ -90,7 +90,7 @@ bool orm_insert(OrmModel *model, void *struct_ptr) {
     
     bool success = true;
     if (sqlite3_step(stmt) != SQLITE_DONE) {
-        printf("[ORM] Insert Hatasi: %s\n", sqlite3_errmsg(db));
+        printf("[ORM] Insert Error: %s\n", sqlite3_errmsg(db));
         success = false;
     } else {
         for (int i = 0; model->fields[i].name != NULL; i++) {
@@ -112,7 +112,7 @@ bool orm_find_by_id(OrmModel *model, int id, void *out_struct_ptr) {
     if (!db) return false;
     
     char sql[256];
-    // Aslinda prepared statement kullaniyoruz:
+    // Using prepared statements:
     snprintf(sql, sizeof(sql), "SELECT * FROM %s WHERE id = ?;", model->table_name);
     
     sqlite3_stmt *stmt;
@@ -181,7 +181,7 @@ bool orm_update(OrmModel *model, void *struct_ptr) {
         field_count++;
     }
     
-    if (id_value == -1) return false; // ID alani bulunamadi
+    if (id_value == -1) return false; // ID field not found
     
     snprintf(sql, sizeof(sql), "UPDATE %s SET %s WHERE id = ?;", model->table_name, sets);
     

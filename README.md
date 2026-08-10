@@ -1,244 +1,133 @@
 # Cova Framework
 
-<p align="center">
-  <img width="1440" height="480" alt="image" src="https://github.com/user-attachments/assets/340957cd-2573-4a63-86f0-0584d18da096" />
-</p>
+![Cova Logo](https://img.shields.io/badge/Cova-Framework-blue?style=for-the-badge&logo=c)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-Cova is a high-performance, lightweight, and robust C Web Framework designed for building modern web applications, RESTful APIs, and real-time services. It handles everything from socket management to database operations internally, without relying on bloated external dependencies.
+Cova is a blazing fast, lightweight, and modern web framework written purely in C. Designed with zero external dependencies (other than OpenSSL for HTTPS), Cova brings the elegance of modern web frameworks (like Express.js or FastAPI) to the raw performance of C.
 
-## Key Features
+## 🚀 Features
 
-*   **Zero Memory Leak Guarantee:** Features a built-in memory tracker that intercepts all memory allocations and deallocations, ensuring that every allocated byte is freed.
-*   **Routing System:** Dynamic routing mechanism supporting URL parameters (e.g., `/users/:id`) and query parameters (e.g., `?q=search`).
-*   **Middleware Architecture:** Easily intercept incoming HTTP requests to handle logging, authentication, and authorization before reaching the endpoint handlers.
-*   **Built-in SQLite Integration:** Ships with an embedded SQLite engine and provides seamless, automated conversion between SQL queries and JSON objects.
-*   **WebSockets (Real-Time):** Native implementation of the RFC 6455 WebSocket protocol. Handles Handshake, SHA-1 hashing, Base64 encoding, and Masking internally.
-*   **Static File & Template Server:** Deliver static assets or use the built-in HTML template engine to inject context variables dynamically.
-*   **Hot-Reloading:** A dedicated Bash script that automatically detects changes in source code, recompiles the framework, and restarts the server instantly.
+Cova is packed with enterprise-grade features, built from scratch to guarantee maximum performance and zero memory leaks.
+
+- **⚡ ThreadPool Concurrency:** Efficiently handles thousands of concurrent requests using a custom ThreadPool.
+- **🛡️ Custom ORM (Object-Relational Mapping):** Say goodbye to manual SQL queries! Map your C structs directly to SQLite tables using our powerful macro-based ORM.
+- **🔐 JWT Authentication:** Built-in middleware for issuing and verifying JSON Web Tokens.
+- **⛔ Rate Limiting:** Protect your endpoints from DDoS attacks with a robust Fixed Window rate limiter.
+- **🗜️ GZIP Compression:** Automatic response compression to save bandwidth.
+- **🔌 WebSockets:** Native support for real-time bidirectional communication.
+- **📁 Multipart File Uploads:** Easily handle `multipart/form-data` requests.
+- **🛠️ Memory Tracker:** A built-in memory leak detector ensures your application stays rock-solid in production.
 
 ---
 
-## Installation and Build Instructions
+## 🛠️ Quick Start
 
-Cova uses CMake as its primary build system to ensure cross-platform compatibility and professional library structuring.
+### 1. Requirements
+- **Windows:** MSYS2 / MinGW-w64 (GCC)
+- **Linux/Mac:** GCC and Make
+- **OpenSSL:** Optional, for HTTPS support.
 
-### Requirements
-*   CMake (Version 3.10 or higher)
-*   GCC or MSVC Compiler
-
-### Build Steps
-
-1.  Clone the repository and navigate to the root directory.
-2.  Generate the build files using CMake:
-    ```bash
-    cmake -B build
-    ```
-3.  Compile the project:
-    ```bash
-    cmake --build build
-    ```
-4.  Run the executable:
-    ```bash
-    ./build/cova_server
-    ```
-
-### Hot-Reloading (Development Mode)
-
-When developing your application, you do not need to manually recompile every time you change a file. Execute the provided watcher script:
+### 2. Build the Framework
+Use the provided build script to compile the framework and the example application.
 
 ```bash
-./cova_watch.sh
+# Windows
+.\build.bat
+
+# Linux / MacOS
+make
 ```
 
-This script monitors all `.c`, `.h`, and `.html` files. Upon detecting a save action, it instantly terminates the active server, recompiles the codebase, and relaunches the application.
-
----
-
-## Integrating Cova into Your Own Project
-
-If you want to use the Cova Framework to build your own application, the most modern and robust method is to include it as a CMake subdirectory.
-
-### Step 1: Add Cova as a Submodule
-Inside your own project directory, run:
+### 3. Run the Server
 ```bash
-git submodule add https://github.com/TurkerAlbayrak/Cova.git vendor/cova
+./server.exe
 ```
 
-### Step 2: Update Your CMakeLists.txt
-Add the Cova directory and link the library to your main executable:
-
-```cmake
-cmake_minimum_required(VERSION 3.10)
-project(MyAwesomeApp VERSION 1.0.0 LANGUAGES C)
-
-# Add Cova Framework
-add_subdirectory(vendor/cova)
-
-# Your application
-add_executable(my_app src/main.c)
-
-# Link Cova to your application
-target_link_libraries(my_app cova)
-```
-
-### Step 3: Include the Header
-Now, you can include Cova anywhere in your source code:
-```c
-#include "cova.h"
-
-App app;
-// Build your handlers...
-```
+The server will start listening on `http://localhost:8080`.
 
 ---
 
-## Detailed Usage Guide
+## 💻 Code Examples
 
-The `examples/main.c` file serves as the core entry point for testing capabilities. Below are detailed examples of how to utilize the various components of the Cova Framework.
-
-### 1. Application Initialization
-
-To start a server, you must initialize an `App` instance and invoke `app_run`.
-
-```c
-#include "cova.h"
-
-App app;
-
-int main(void) {
-    app_init(&app);
-    app_run(&app, 8080); // Listens on port 8080
-    return 0;
-}
-```
-
-### 2. Basic Routing and Handlers
-
-Routes are defined using methods like `app_get` and `app_post`. A handler function always takes `Request` and `Response` pointers.
+### Defining a Route & JSON Response
 
 ```c
 void hello_handler(Request *req, Response *res) {
-    response_header(res, "Content-Type", "text/plain");
-    response_text(res, "Hello, World!");
+    response_json(res, "{\"message\": \"Welcome to Cova Framework!\"}");
 }
 
 int main(void) {
+    App app;
     app_init(&app);
-    app_get(&app, "/hello", hello_handler);
+    
+    app_get(&app, "/", hello_handler);
     app_run(&app, 8080);
     return 0;
 }
 ```
 
-### 3. Middleware Implementation
+### Using the Cova ORM
 
-Middlewares execute sequentially before the request reaches the target handler. Returning `1` allows the chain to continue; returning `0` halts the execution (useful for unauthorized requests).
+Define your C struct and map it to a database table:
 
 ```c
-int logger_middleware(Request *req, Response *res) {
-    printf("[LOGGER] Incoming request to: %s\n", req->path);
-    return 1;
-}
+typedef struct {
+    int id;
+    char username[50];
+    int age;
+} User;
 
-int main(void) {
-    app_init(&app);
-    app_use(&app, logger_middleware);
-    // ... routes
+// ORM Metadata Mapping
+ORM_FIELD_MAP(User) = {
+    ORM_INT_FIELD(User, id, "PRIMARY KEY AUTOINCREMENT"),
+    ORM_STRING_FIELD(User, username, 50, "NOT NULL UNIQUE"),
+    ORM_INT_FIELD(User, age, "DEFAULT 18"),
+    ORM_END_FIELDS
+};
+ORM_MODEL(UserModel, "users", User, __orm_fields_User);
+```
+
+Inserting and Querying data:
+```c
+// Auto-migrate (Creates table if it doesn't exist)
+orm_auto_migrate(&UserModel);
+
+// Insert a new record
+User new_user = {0, "cova_admin", 35};
+orm_insert(&UserModel, &new_user);
+
+// Find by ID (directly into a struct!)
+User u;
+if (orm_find_by_id(&UserModel, 1, &u)) {
+    printf("Found User: %s (Age: %d)\n", u.username, u.age);
 }
 ```
 
-### 4. Serving Static Files
-
-You can map a URL prefix directly to a local file system directory.
-
+### WebSocket Echo Server
 ```c
-int main(void) {
-    app_init(&app);
-    // Any request to /public/* will serve files from the ./public directory
-    app_static(&app, "/public", "./public"); 
-    app_run(&app, 8080);
-}
-```
-
-### 5. Returning JSON Responses
-
-Cova utilizes the cJSON library internally, which is deeply integrated with the framework's memory tracker.
-
-```c
-void api_handler(Request *req, Response *res) {
-    Json *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "status", "success");
-    
-    response_status(res, 200);
-    response_json_object(res, json);
-    
-    cJSON_Delete(json); // Necessary to prevent memory leaks
-}
-```
-
-### 6. SQLite Database Integration
-
-The `db_query` function automatically connects to the database and maps the resulting rows into a JSON array, making it extremely easy to build REST APIs.
-
-```c
-void get_users_handler(Request *req, Response *res) {
-    const char *sql = "SELECT id, name FROM users;";
-    Json *rows = db_query(sql);
-    
-    if (rows) {
-        response_json_object(res, rows);
-        cJSON_Delete(rows);
-    }
-}
-
-int main(void) {
-    db_init("application.db"); // Initialize the database file
-    app_init(&app);
-    app_get(&app, "/users", get_users_handler);
-    app_run(&app, 8080);
-}
-```
-
-### 7. WebSockets
-
-Cova handles the intricate details of WebSocket handshakes and framing. You can interact with the client using a blocking loop.
-
-```c
-void chat_handler(Request *req, Response *res) {
-    if (!ws_handshake(req, res)) {
-        response_status(res, 400);
-        return;
-    }
+void websocket_chat_handler(Request *req, Response *res) {
+    if (!ws_handshake(req, res)) return;
     
     while (1) {
         char *msg = ws_read_frame(res->client_socket);
-        if (!msg) break; // Client disconnected
+        if (!msg) break;
         
-        ws_send_text(res->client_socket, "Message Received!");
+        char reply[512];
+        snprintf(reply, sizeof(reply), "Server Echo: %s", msg);
+        ws_send_text(res->client_socket, reply);
+        
         cova_free(msg);
     }
 }
 ```
 
-### 8. Custom Error Handlers
-
-You can override the default 404 (Not Found) or 500 (Internal Server Error) behaviors.
-
-```c
-void custom_404(Request *req, Response *res) {
-    response_status(res, 404);
-    response_text(res, "Resource could not be found.");
-}
-
-int main(void) {
-    app_init(&app);
-    app_on_404(&app, custom_404);
-    app_run(&app, 8080);
-}
-```
-
 ---
 
-## Memory Tracker Report
+## 🏗️ Architecture
+Cova is built around a non-blocking network socket architecture. When a client connects, the request is dispatched to a **ThreadPool** worker. This ensures the main server loop is never blocked, allowing for massive concurrency. 
 
-When the server process receives an interrupt signal (SIGINT / CTRL+C), the framework safely shuts down all active threads and prints a final memory analysis report. If the number of `malloc` operations perfectly matches the number of `free` operations, you will see a `0 Bellek Sizintisi` (0 Memory Leak) validation on the terminal. Ensure you always use `cova_malloc` and `cova_free` within your handler logic to utilize this feature.
+All memory allocations are routed through `cova_malloc` and `cova_free`. Upon graceful shutdown (CTRL+C), the **Memory Tracker** generates a detailed report, guaranteeing a leak-free environment.
+
+## 📄 License
+This project is licensed under the MIT License.

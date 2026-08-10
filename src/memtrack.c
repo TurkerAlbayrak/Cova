@@ -72,15 +72,15 @@ void cova_free(void *ptr) {
 
 void cova_mem_report(void) {
     printf("\n\n==========================================\n");
-    printf("[V16] MEMORY LEAK (BELLEK SIZINTISI) RAPORU\n");
+    printf("[V16] MEMORY LEAK REPORT\n");
     printf("==========================================\n");
-    printf("- Toplam Tahsis (Malloc) : %d adet\n", total_allocs);
-    printf("- Toplam Temizleme (Free): %d adet\n", total_frees);
+    printf("- Total Allocations (Malloc) : %d count\n", total_allocs);
+    printf("- Total Frees (Free): %d count\n", total_frees);
     printf("------------------------------------------\n");
     if (current_allocs == 0) {
-        printf(">> SONUC: KUSURSUZ! (0 Bellek Sizintisi) <<\n");
+        printf(">> RESULT: FLAWLESS! (0 Memory Leaks) <<\n");
     } else {
-        printf(">> SONUC: TEHLIKE! %d adet bellek temizlenmedi! <<\n", current_allocs);
+        printf(">> SONUC: TEHLIKE! %d count bellek temizlenmedi! <<\n", current_allocs);
     }
     printf("==========================================\n\n");
 }

@@ -10,7 +10,7 @@
 #include <openssl/evp.h>
 #endif
 
-// HMAC SHA256 uretimi ve base64url encode islemi
+// Generates HMAC SHA256 and base64url encodes it
 static char *jwt_sign(const char *data, const char *secret) {
 #ifdef USE_OPENSSL
     unsigned char hash[EVP_MAX_MD_SIZE];

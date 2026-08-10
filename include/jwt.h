@@ -3,10 +3,10 @@
 
 #include "cova.h"
 
-// JWT Token uretimi
+// Generates a JWT Token
 char *jwt_generate(const char *payload_json, const char *secret);
 
-// JWT Token dogrulamasi
+// Verifies a JWT Token
 int jwt_verify(const char *token, const char *secret);
 
 // JWT Middleware
