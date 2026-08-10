@@ -341,6 +341,7 @@ void app_init(App *app) {
     
     // Rate Limit varsayilan kapali (0)
     app->max_requests_per_second = 0;
+    rate_limiter_init(); // Init here to prevent race conditions
     
     // V22: Dosya yukleme varsayilan max limit 10 MB
     app->max_body_size = 10 * 1024 * 1024;
