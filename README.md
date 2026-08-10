@@ -1,7 +1,7 @@
 # Cova Framework
 
 <p align="center">
-  <img width="517" height="457" alt="image" src="https://github.com/user-attachments/assets/d23b2dab-d6a2-4dbb-858e-8278a6777b58" />
+  <img width="1440" height="480" alt="image" src="https://github.com/user-attachments/assets/340957cd-2573-4a63-86f0-0584d18da096" />
 </p>
 
 ## Screenshots
