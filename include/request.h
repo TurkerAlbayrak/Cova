@@ -1,6 +1,8 @@
 #ifndef COVA_REQUEST_H
 #define COVA_REQUEST_H
 
+#include <stddef.h>
+
 // HTTP Metotlarını temsil eden Enum yapısı
 typedef enum {
     HTTP_GET,
