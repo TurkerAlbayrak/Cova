@@ -4,7 +4,10 @@
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Cova is a blazing fast, lightweight, and modern web framework written purely in C. Designed with zero external dependencies (other than OpenSSL for HTTPS), Cova brings the elegance of modern web frameworks (like Express.js or FastAPI) to the raw performance of C.
+<img width="1440" height="480" alt="image" src="https://github.com/user-attachments/assets/94fec5a4-54fc-432d-a1be-254f62be45b8" />
+
+
+Cova is a blazing fast, lightweight, and modern web framework written purely in C. Designed with zero external dependencies (other than OpenSSL for HTTPS), Cova brings the elegance of modern web frameworks to the raw performance of C.
 
 ## 🚀 Features
 
