@@ -30,6 +30,16 @@ typedef struct {
     char *value;
 } RequestQuery;
 
+// V22: Dosya yukleme (Multipart/form-data)
+#define MAX_FILES 10
+typedef struct {
+    char name[64];       // Form alani adi (Örn: "profile_pic")
+    char filename[256];  // Orijinal dosya adi (Örn: "avatar.png")
+    char content_type[64]; // Örn: "image/png"
+    unsigned char *data; // Binary veri (pointer)
+    size_t size;         // Dosya boyutu
+} UploadedFile;
+
 // Gelen HTTP İsteğini (Request) temsil eden Struct
 typedef struct {
     HttpMethod method;
@@ -38,6 +48,10 @@ typedef struct {
     char *raw_headers;
     char *body;
     
+    // V22: Binary (Dosya) body datasi
+    unsigned char *body_data;
+    size_t body_len;
+
     RequestHeader headers[MAX_HEADERS];
     int header_count;
 
@@ -52,6 +66,10 @@ typedef struct {
     // URL sonundaki (?q=Cova) Query parametreleri için
     RequestQuery queries[MAX_QUERIES];
     int query_count;
+
+    // V22: Yüklenen dosyalar
+    UploadedFile files[MAX_FILES];
+    int file_count;
 } Request;
 
 // İsteği metinden (string) alıp struct'a dönüştürür (ayrıştırır)

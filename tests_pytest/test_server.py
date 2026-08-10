@@ -168,3 +168,23 @@ def test_rate_limiter():
             
     assert success_count <= 100, f"Expected max 100 successful requests, but got {success_count}"
     assert too_many_requests_count >= 5, f"Expected at least 5 rate limited requests, but got {too_many_requests_count}"
+
+def test_file_upload():
+    """Test Multipart/form-data File Upload"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    # Simulate a file upload
+    file_content = b"This is a test file content for Cova Framework!"
+    files = {
+        'profile_pic': ('avatar.txt', file_content, 'text/plain')
+    }
+    
+    r = requests.post(url + "/upload", files=files, verify=False)
+    assert r.status_code == 200
+    assert "success" in r.text
+    assert "avatar.txt" in r.text
+    assert str(len(file_content)) in r.text

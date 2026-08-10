@@ -10,6 +10,7 @@
 #include "memtrack.h"
 #include "threadpool.h"
 #include "rate_limiter.h"
+#include "multipart.h"
 
 #ifdef USE_OPENSSL
 #include <openssl/ssl.h>
@@ -90,27 +91,104 @@ void* handle_client_thread(void *arg) {
 #endif
 
     while (1) {
-        char buffer[4096] = {0};
-        int bytes_read = 0;
+        int header_buf_size = 8192; // Max header boyutu
+        char *header_buffer = (char*)cova_malloc(header_buf_size);
+        memset(header_buffer, 0, header_buf_size);
+        
+        int total_read = 0;
+        int header_ended = 0;
 
+        while (total_read < header_buf_size - 1) {
+            int bytes_read = 0;
 #ifdef USE_OPENSSL
-        if (ssl) {
-            bytes_read = SSL_read(ssl, buffer, sizeof(buffer) - 1);
-        } else
+            if (ssl) {
+                bytes_read = SSL_read(ssl, header_buffer + total_read, header_buf_size - 1 - total_read);
+            } else
 #endif
-        {
-            bytes_read = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
+            {
+                bytes_read = recv(client_socket, header_buffer + total_read, header_buf_size - 1 - total_read, 0);
+            }
+            
+            if (bytes_read <= 0) break;
+            total_read += bytes_read;
+            
+            if (strstr(header_buffer, "\r\n\r\n")) {
+                header_ended = 1;
+                break;
+            }
         }
         
-        if (bytes_read <= 0) {
-            break; // Bağlantı kapandı veya Timeout oldu
+        if (total_read <= 0 || !header_ended) {
+            cova_free(header_buffer);
+            break; // Bağlantı kapandı veya Timeout oldu veya geçersiz istek
         }
+
+        // Content-Length'i bul
+        int content_length = 0;
+        char *cl_ptr = strstr(header_buffer, "Content-Length:");
+        if (!cl_ptr) cl_ptr = strstr(header_buffer, "content-length:");
+        if (cl_ptr) {
+            content_length = atoi(cl_ptr + 15);
+        }
+        
+        // V22: Limit Kontrolü
+        if (content_length > (int)app->max_body_size) {
+            Response res;
+            res.client_socket = client_socket;
+            res.ssl = ssl;
+            res.status_code = 413;
+            res.header_count = 0;
+            res.keep_alive = 0;
+            res.use_gzip = 0;
+            response_text(&res, "Payload Too Large");
+            cova_free(header_buffer);
+            break;
+        }
+
+        char *header_end = strstr(header_buffer, "\r\n\r\n");
+        int header_len = (header_end - header_buffer) + 4;
+        int body_read_so_far = total_read - header_len;
+        
+        unsigned char *body_data = NULL;
+        if (content_length > 0) {
+            body_data = (unsigned char*)cova_malloc(content_length + 1);
+            if (body_read_so_far > 0) {
+                memcpy(body_data, header_buffer + header_len, body_read_so_far);
+            }
+            
+            int body_total = body_read_so_far;
+            while (body_total < content_length) {
+                int bytes_read = 0;
+#ifdef USE_OPENSSL
+                if (ssl) {
+                    bytes_read = SSL_read(ssl, body_data + body_total, content_length - body_total);
+                } else
+#endif
+                {
+                    bytes_read = recv(client_socket, (char*)(body_data + body_total), content_length - body_total, 0);
+                }
+                
+                if (bytes_read <= 0) break;
+                body_total += bytes_read;
+            }
+            body_data[content_length] = '\0';
+        }
+
         // Buffer'ı Request struct'ına çevir
         Request req;
         memset(&req, 0, sizeof(Request));
         strncpy(req.client_ip, client_ip, sizeof(req.client_ip));
         req.client_ip[45] = '\0';
-        request_parse(buffer, &req);
+        request_parse(header_buffer, &req);
+        
+        req.body_data = body_data;
+        req.body_len = content_length;
+        if (content_length > 0) {
+            req.body = (char*)body_data; // Eski yapi icin (JSON)
+        }
+        
+        // V22: Multipart Parse
+        multipart_parse(&req);
 
         // Eğer parse edilemeyen anlamsız bir istekse (V13 - 500 Hatası)
         if (req.method == HTTP_UNKNOWN) {
@@ -124,6 +202,8 @@ void* handle_client_thread(void *arg) {
             } else {
                 response_text(&res, "Internal Server Error - Invalid Request");
             }
+            if (req.body_data) cova_free(req.body_data);
+            cova_free(header_buffer);
             CLOSE_SOCKET(client_socket);
 #ifdef _WIN32
             return 0;
@@ -219,6 +299,10 @@ void* handle_client_thread(void *arg) {
             }
         }
         
+        // V22: Temizlik
+        if (req.body_data) cova_free(req.body_data);
+        cova_free(header_buffer);
+        
         // V18: Eğer Keep-Alive istenmemişse veya hata varsa döngüyü kır
         if (!keep_alive) {
             break;
@@ -257,6 +341,9 @@ void app_init(App *app) {
     
     // Rate Limit varsayilan kapali (0)
     app->max_requests_per_second = 0;
+    
+    // V22: Dosya yukleme varsayilan max limit 10 MB
+    app->max_body_size = 10 * 1024 * 1024;
     
     // Thread pool'u hemen baslatma, app_run'da baslatilacak
     app->thread_pool = NULL;
@@ -398,6 +485,11 @@ void app_set_jwt_secret(App *app, const char *secret) {
 void app_set_rate_limit(App *app, int max_req) {
     if (!app) return;
     app->max_requests_per_second = max_req;
+}
+
+void app_set_max_body_size(App *app, size_t max_size) {
+    if (!app) return;
+    app->max_body_size = max_size;
 }
 
 void app_free(App *app) {

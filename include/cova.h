@@ -61,6 +61,9 @@ typedef struct {
     
     // V21: Rate Limiting
     int max_requests_per_second;
+
+    // V22: Multipart / File Upload max size (bytes)
+    size_t max_body_size;
 } App;
 
 extern App *g_app;
@@ -94,5 +97,8 @@ void app_set_jwt_secret(App *app, const char *secret);
 
 // Rate Limiting (Saniyedeki Maksimum Istek)
 void app_set_rate_limit(App *app, int max_req);
+
+// Maksimum İstek Gövdesi Boyutu (Örn: Dosya Yükleme limiti)
+void app_set_max_body_size(App *app, size_t max_size);
 
 #endif // COVA_H

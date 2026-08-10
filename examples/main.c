@@ -120,6 +120,32 @@ void login_handler(Request *req, Response *res) {
 }
 
 void protected_handler(Request *req, Response *res) {
+    response_text(res, "Welcome to the Protected Area! You have a valid JWT.");
+}
+
+// V22: Dosya Yukleme (Multipart) Handler
+void upload_handler(Request *req, Response *res) {
+    if (req->file_count == 0) {
+        response_status(res, 400);
+        response_text(res, "No files uploaded.");
+        return;
+    }
+    
+    // Ilk yuklenen dosya hakkinda bilgi don
+    char buf[512];
+    snprintf(buf, sizeof(buf), 
+        "{\"status\":\"success\", \"filename\":\"%s\", \"size\":%zu, \"content_type\":\"%s\"}",
+        req->files[0].filename, req->files[0].size, req->files[0].content_type);
+        
+    // (Opsiyonel) Dosyayi diske kaydetmek isterseniz:
+    // FILE *f = fopen(req->files[0].filename, "wb");
+    // fwrite(req->files[0].data, 1, req->files[0].size, f);
+    // fclose(f);
+    
+    response_json(res, buf);
+}
+
+void jwt_protected_handler(Request *req, Response *res) {
     // Route seviyesinde JWT Middleware cagirimi
     if (!jwt_middleware(req, res)) return;
     
@@ -174,6 +200,9 @@ int main(void) {
     app_get(&app, "/ws", websocket_chat_handler);
     app_get(&app, "/login", login_handler);
     app_get(&app, "/protected", protected_handler);
+    
+    // V22: File Upload route
+    app_post(&app, "/upload", upload_handler);
     
     // 7. HTTPS Desteği (Sertifikalar varsa)
     // Örnek: app_use_https(&app, "server.crt", "server.key");
