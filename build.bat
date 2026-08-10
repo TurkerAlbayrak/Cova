@@ -14,7 +14,7 @@ echo Compiling server.exe...
 gcc -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -DUSE_OPENSSL %INC_DIRS% examples\main.c %SRC_FILES% -o server.exe %LIBS%
 
 if %errorlevel% neq 0 (
-    echo Build Failed! Lutfen OpenSSL ve GCC'nin (MinGW) sisteminizde yuklu ve PATH icerisinde oldugundan emin olun.
+    echo Build Failed! Lutfen OpenSSL ve GCC'nin MinGW sisteminizde yuklu ve PATH icerisinde oldugundan emin olun.
     echo Eger OpenSSL yoksa, build.bat dosyasindan -DUSE_OPENSSL, -lssl ve -lcrypto parametrelerini cikararak tekrar deneyin.
     exit /b %errorlevel%
 )
