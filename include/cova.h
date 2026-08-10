@@ -55,7 +55,12 @@ typedef struct {
 #else
     void *ssl_ctx;
 #endif
+
+    // V20: JWT
+    char jwt_secret[128];
 } App;
+
+extern App *g_app;
 
 // App objesini başlatır
 void app_init(App *app);
@@ -80,5 +85,8 @@ void app_run(App *app, uint16_t port);
 // Router API'leri
 void app_get(App *app, const char *path, Handler handler);
 void app_post(App *app, const char *path, Handler handler);
+
+// JWT Secret ayarlama
+void app_set_jwt_secret(App *app, const char *secret);
 
 #endif // COVA_H

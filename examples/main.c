@@ -5,6 +5,7 @@
 #include "database.h"
 #include "websocket.h"
 #include "memtrack.h"
+#include "jwt.h"
 
 // ---------------------------------------------------------
 // Application State
@@ -102,6 +103,28 @@ void websocket_chat_handler(Request *req, Response *res) {
     }
 }
 
+void login_handler(Request *req, Response *res) {
+    (void)req;
+    // Basit login simulasyonu (Gercekte db'den kullanici kontrol edilir)
+    char *token = jwt_generate("{\"user\":\"admin\"}", "my_super_secret_key");
+    if (token) {
+        char buf[1024];
+        snprintf(buf, sizeof(buf), "{\"token\":\"%s\"}", token);
+        response_json(res, buf);
+        cova_free(token);
+    } else {
+        response_status(res, 500);
+        response_text(res, "Token generation failed");
+    }
+}
+
+void protected_handler(Request *req, Response *res) {
+    // Route seviyesinde JWT Middleware cagirimi
+    if (!jwt_middleware(req, res)) return;
+    
+    response_text(res, "Welcome to the protected zone, admin!");
+}
+
 /*
  * Custom 404 Error Handler
  */
@@ -135,12 +158,17 @@ int main(void) {
     
     // 5. Register Custom Error Handlers
     app_on_404(&app, not_found_handler);
+
+    // V20: JWT Secret Ayari
+    app_set_jwt_secret(&app, "my_super_secret_key");
     
     // 6. Define Routes
     app_get(&app, "/", hello_handler);
     app_get(&app, "/api/status", api_status_handler);
     app_get(&app, "/api/users", db_users_handler);
     app_get(&app, "/ws", websocket_chat_handler);
+    app_get(&app, "/login", login_handler);
+    app_get(&app, "/protected", protected_handler);
     
     // 7. HTTPS Desteği (Sertifikalar varsa)
     // Örnek: app_use_https(&app, "server.crt", "server.key");

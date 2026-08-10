@@ -31,8 +31,8 @@
 // Router Eşleştirme Motoru (YENİ - V9) - İleri Tanımlama (Forward Declaration)
 static int match_route(const char *route_path, const char *req_path, Request *req);
 
-// Global app pointer for graceful shutdown
-static App *g_app = NULL;
+// Global app pointer for graceful shutdown and JWT access
+App *g_app = NULL;
 
 // Thread'e gönderilecek argümanları taşıyan yapı
 typedef struct {
@@ -242,7 +242,12 @@ void app_init(App *app) {
     
     app->use_https = 0;
     app->ssl_ctx = NULL;
-    app->thread_pool = threadpool_create(16); // V17 Thread Pool
+    
+    // JWT varsayilan bos
+    memset(app->jwt_secret, 0, sizeof(app->jwt_secret));
+    
+    // Thread pool'u hemen baslatma, app_run'da baslatilacak
+    app->thread_pool = NULL;
     
     // V16: JSON kütüphanesinin (cJSON) arka planda bizim Tracker'ımızı kullanmasını sağlıyoruz!
     cJSON_Hooks hooks;
@@ -365,11 +370,17 @@ void app_get(App *app, const char *path, Handler handler) {
 }
 
 void app_post(App *app, const char *path, Handler handler) {
-    if (app->route_count >= MAX_ROUTES) return;
+    if (app == NULL || app->route_count >= MAX_ROUTES) return;
     app->routes[app->route_count].method = HTTP_POST;
     app->routes[app->route_count].path = (char*)path;
     app->routes[app->route_count].handler = handler;
     app->route_count++;
+}
+
+void app_set_jwt_secret(App *app, const char *secret) {
+    if (!app || !secret) return;
+    strncpy(app->jwt_secret, secret, sizeof(app->jwt_secret) - 1);
+    app->jwt_secret[sizeof(app->jwt_secret) - 1] = '\0';
 }
 
 void app_free(App *app) {

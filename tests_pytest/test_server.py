@@ -108,3 +108,36 @@ def test_gzip_compression():
     
     # SIKISTIRMA DOGRULAMASI: Gelen verinin bozulmadigini teyit et
     assert len(r.text) > 0
+
+def test_jwt_middleware():
+    """Test JWT Middleware token generation and validation"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    # 1. Korumali sayfaya tokensiz girmeyi dene (401 Bekleniyor)
+    r1 = requests.get(url + "/protected", verify=False)
+    assert r1.status_code == 401
+    assert "Unauthorized" in r1.text
+    
+    # 2. Login ol ve JWT Token al
+    r2 = requests.get(url + "/login", verify=False)
+    assert r2.status_code == 200
+    token = r2.json().get("token")
+    assert token is not None
+    assert len(token) > 20
+    
+    # 3. Korumali sayfaya token ile girmeyi dene (200 Bekleniyor)
+    headers = {"Authorization": f"Bearer {token}"}
+    r3 = requests.get(url + "/protected", headers=headers, verify=False)
+    assert r3.status_code == 200
+    assert "Welcome" in r3.text
+    
+    # 4. Korumali sayfaya GECERSIZ (Bozuk) token ile girmeyi dene (401 Bekleniyor)
+    bad_token = token[:-1] + ("A" if token[-1] != "A" else "B")
+    bad_headers = {"Authorization": f"Bearer {bad_token}"}
+    r4 = requests.get(url + "/protected", headers=bad_headers, verify=False)
+    assert r4.status_code == 401
+    assert "Unauthorized" in r4.text
