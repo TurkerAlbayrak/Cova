@@ -156,7 +156,83 @@ void websocket_handler(Request *req, Response *res) {
 
 ---
 
-## 📚 Documentation
+## 🛠️ Usage in Your Own Projects
+
+Want to use Cova Framework to build your own C projects? Follow these simple steps:
+
+### 1. Project Structure
+Create a new folder for your project and copy the essential Cova directories into it. Your project should look like this:
+
+```
+my_cova_project/
+├── include/           # Copy from Cova Framework
+├── src/               # Copy from Cova Framework (cova.c, server.c, orm.c, etc.)
+├── main.c             # Your application entry point
+└── Makefile           # Your build script
+```
+
+### 2. Basic `main.c` Template
+Create a `main.c` file and include the main framework header:
+
+```c
+#include "cova.h"
+
+void home_handler(Request *req, Response *res) {
+    response_text(res, "Welcome to my Cova-powered app!");
+}
+
+int main(void) {
+    App app;
+    app_init(&app);
+    
+    app_get(&app, "/", home_handler);
+    
+    printf("Starting server on port 8080...\n");
+    app_run(&app, 8080);
+    return 0;
+}
+```
+
+### 3. Compilation
+When compiling your project, ensure you link the necessary libraries. 
+
+**Linux / macOS:**
+```bash
+gcc -Wall -Wextra -Iinclude main.c src/*.c -o my_app -lssl -lcrypto -lz -lpthread
+```
+
+**Windows (MSYS2/MinGW):**
+```bash
+gcc -Wall -Wextra -Iinclude main.c src/*.c -o my_app.exe -lws2_32 -lssl -lcrypto -lz
+```
+
+---
+
+## ⚡ Hot-Reloading (cova_watch.sh)
+
+Tired of manually stopping the server, recompiling, and starting it again every time you change a line of code? 
+
+Cova includes a built-in Hot-Reloading script: **`cova_watch.sh`**
+
+This script constantly watches your `.c`, `.h`, and `.html` files for changes. When you save a file, it automatically recompiles your code and restarts the server instantly!
+
+### How to use it:
+1. Ensure you have `bash` and `cmake` installed.
+2. Make the script executable (Linux/macOS):
+   ```bash
+   chmod +x cova_watch.sh
+   ```
+3. Run the script:
+   ```bash
+   ./cova_watch.sh
+   ```
+4. Start coding! Whenever you save a file, the watcher will print `[COVA WATCHER] Degisiklik algilandi! Yeniden baslatiliyor...` and refresh your server in milliseconds. To stop the watcher, simply press `CTRL+C`.
+
+> **Note:** `cova_watch.sh` uses `cmake` to build the `cova_server` executable by default. Make sure your `CMakeLists.txt` is properly configured for your project if you modify the file structure.
+
+---
+
+## 📖 Documentation
 
 For an in-depth guide on every feature, API reference, and advanced tutorials, please visit our **[Official Documentation Site](./docs/index.html)** (Open `docs/index.html` in your browser).
 
