@@ -1,4 +1,10 @@
 #include "cova.h"
+#include "cJSON.h"
+#include "database.h"
+#include "orm.h"
+#include "jwt.h"
+#include "sqlite3.h"
+#include "memtrack.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -161,7 +167,7 @@ int main(void) {
     app_post(&app, "/api/login", login_handler);
 
     // 4. Serve Static Frontend Files
-    app_static(&app, "/", "./sample_project/public");
+    app_static(&app, "/", "./sample_project/public/");
 
     // 5. Start Server
     printf("\n[SYSTEM] Starting Cova Blog on port 8080...\n");
