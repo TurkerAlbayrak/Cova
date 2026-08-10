@@ -1,0 +1,10 @@
+.git
+.pytest_cache
+__pycache__
+*.exe
+*.o
+build/
+tests_pytest/
+venv/
+cova_dev.db
+app.db

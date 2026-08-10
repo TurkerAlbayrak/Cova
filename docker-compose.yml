@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  cova-server:
+    build: .
+    container_name: cova_framework
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount the public folder so static files can be updated without rebuilding
+      - ./public:/app/public
+    restart: unless-stopped
