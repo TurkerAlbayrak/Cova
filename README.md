@@ -4,6 +4,8 @@
   <img width="1440" height="480" alt="image" src="https://github.com/user-attachments/assets/340957cd-2573-4a63-86f0-0584d18da096" />
 </p>
 
+Cova is a high-performance, lightweight, and robust C Web Framework designed for building modern web applications, RESTful APIs, and real-time services. It handles everything from socket management to database operations internally, without relying on bloated external dependencies.
+
 ## Screenshots
 
 <img width="677" height="297" alt="1" src="https://github.com/user-attachments/assets/6ae0fb19-441e-4711-afb8-3d5165fef5d2" />
@@ -16,7 +18,6 @@
 <img width="1027" height="1031" alt="7" src="https://github.com/user-attachments/assets/e854b14a-c68f-431e-9611-828cca8d8075" />
 <img width="1452" height="567" alt="8" src="https://github.com/user-attachments/assets/72058f32-3cda-4f6a-b5b2-04ecf649c0e6" />
 
-Cova is a high-performance, lightweight, and robust C Web Framework designed for building modern web applications, RESTful APIs, and real-time services. It handles everything from socket management to database operations internally, without relying on bloated external dependencies.
 
 ## Key Features
 
