@@ -119,9 +119,7 @@ void login_handler(Request *req, Response *res) {
     }
 }
 
-void protected_handler(Request *req, Response *res) {
-    response_text(res, "Welcome to the Protected Area! You have a valid JWT.");
-}
+// (Removed unprotected protected_handler)
 
 // V22: Dosya Yukleme (Multipart) Handler
 void upload_handler(Request *req, Response *res) {
@@ -199,7 +197,7 @@ int main(void) {
     app_get(&app, "/api/users", db_users_handler);
     app_get(&app, "/ws", websocket_chat_handler);
     app_get(&app, "/login", login_handler);
-    app_get(&app, "/protected", protected_handler);
+    app_get(&app, "/protected", jwt_protected_handler);
     
     // V22: File Upload route
     app_post(&app, "/upload", upload_handler);

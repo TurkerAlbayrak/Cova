@@ -151,15 +151,22 @@ def test_rate_limiter():
         url = BASE_URL_HTTPS
         
     import time
+    from concurrent.futures import ThreadPoolExecutor
+    
     # Wait for the next second to ensure a clean window
     time.sleep(1.1)
     
     success_count = 0
     too_many_requests_count = 0
     
-    # 1 saniye icerisinde 115 istek gonder (Limiti 100)
-    for _ in range(115):
-        r = requests.get(url + "/", verify=False)
+    def fetch_url():
+        return requests.get(url + "/", verify=False)
+    
+    # 1 saniye icerisinde 115 istek gonder (Limiti 100) - Paralel gondererek zamandan tasarruf
+    with ThreadPoolExecutor(max_workers=115) as executor:
+        results = list(executor.map(lambda _: fetch_url(), range(115)))
+        
+    for r in results:
         if r.status_code == 429:
             too_many_requests_count += 1
             assert "Too Many Requests" in r.text
