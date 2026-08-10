@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://via.placeholder.com/150x150/1a1a1a/00ffcc?text=Cova" alt="Cova Logo" width="120" height="120">
+  <img width="2720" height="960" alt="cova_logo" src="https://github.com/user-attachments/assets/8f910354-76d5-49df-a432-57ec1368e330" />
   <h1>Cova Framework</h1>
   <p><strong>A high-performance, enterprise-grade Web Framework written in pure C.</strong></p>
 
