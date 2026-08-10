@@ -87,3 +87,24 @@ def test_keep_alive():
         assert r.headers.get("Connection", "").lower() == "keep-alive"
         
     session.close()
+
+def test_gzip_compression():
+    """Test Gzip Compression support for text/html/json endpoints"""
+    url = BASE_URL_HTTP
+    try:
+        requests.get(url, verify=False)
+    except:
+        url = BASE_URL_HTTPS
+        
+    # Gzip istedigimizi belirtiyoruz
+    headers = {"Accept-Encoding": "gzip"}
+    r = requests.get(url + "/", headers=headers, verify=False)
+    
+    assert r.status_code == 200
+    # Python requests kutuphanesi gzip'i otomatik olarak cozer, ama header'da geldi mi kontrol edebiliriz
+    # Veya requests otomatik parse edince Content-Encoding header'ini seffafca gizleyebilir,
+    # raw urllib3 response uzerinden kontrol etmek daha saglikli:
+    assert r.raw.headers.get("Content-Encoding") == "gzip" or r.headers.get("Content-Encoding") == "gzip", "Gzip header was not returned!"
+    
+    # SIKISTIRMA DOGRULAMASI: Gelen verinin bozulmadigini teyit et
+    assert len(r.text) > 0

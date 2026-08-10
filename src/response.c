@@ -16,6 +16,42 @@
 #include <openssl/ssl.h>
 #endif
 
+#include <zlib.h>
+
+static int gzip_compress(const char *src, size_t src_len, char **dest, size_t *dest_len) {
+    z_stream zs;
+    memset(&zs, 0, sizeof(zs));
+    
+    // 15 + 16 for gzip format
+    if (deflateInit2(&zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY) != Z_OK) {
+        return -1;
+    }
+    
+    zs.next_in = (Bytef*)src;
+    zs.avail_in = src_len;
+    
+    size_t out_len = deflateBound(&zs, src_len) + 18;
+    *dest = (char*)cova_malloc(out_len);
+    if (!*dest) {
+        deflateEnd(&zs);
+        return -1;
+    }
+    
+    zs.next_out = (Bytef*)*dest;
+    zs.avail_out = out_len;
+    
+    if (deflate(&zs, Z_FINISH) != Z_STREAM_END) {
+        cova_free(*dest);
+        *dest = NULL;
+        deflateEnd(&zs);
+        return -1;
+    }
+    
+    *dest_len = zs.total_out;
+    deflateEnd(&zs);
+    return 0;
+}
+
 static int net_send(Response *res, const void *buf, size_t len) {
 #ifdef USE_OPENSSL
     if (res->ssl) {
@@ -68,16 +104,39 @@ void response_text(Response *res, const char *text) {
                            "%s: %s\r\n", res->headers[i].name, res->headers[i].value);
     }
     
+    char *compressed_body = NULL;
+    size_t compressed_len = 0;
+    int is_gzipped = 0;
+    
+    if (res->use_gzip) {
+        if (gzip_compress(text, strlen(text), &compressed_body, &compressed_len) == 0) {
+            is_gzipped = 1;
+        }
+    }
+    
+    size_t final_len = is_gzipped ? compressed_len : strlen(text);
+    
     snprintf(buffer, sizeof(buffer),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: text/plain\r\n"
         "Content-Length: %zu\r\n"
         "%s" // Connection header
+        "%s" // Content-Encoding
         "%s" // Özel header'lar buraya gelir
-        "\r\n" // Boş satır, headerların bittiğini gösterir
-        "%s", status, reason, strlen(text), res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, text);
+        "\r\n", 
+        status, reason, final_len, 
+        res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", 
+        is_gzipped ? "Content-Encoding: gzip\r\n" : "",
+        header_buf);
         
     net_send(res, buffer, strlen(buffer));
+    
+    if (is_gzipped) {
+        net_send(res, compressed_body, compressed_len);
+        cova_free(compressed_body);
+    } else {
+        net_send(res, text, final_len);
+    }
 }
 
 void response_json(Response *res, const char *json_str) {
@@ -94,16 +153,39 @@ void response_json(Response *res, const char *json_str) {
                            "%s: %s\r\n", res->headers[i].name, res->headers[i].value);
     }
     
+    char *compressed_body = NULL;
+    size_t compressed_len = 0;
+    int is_gzipped = 0;
+    
+    if (res->use_gzip) {
+        if (gzip_compress(json_str, strlen(json_str), &compressed_body, &compressed_len) == 0) {
+            is_gzipped = 1;
+        }
+    }
+    
+    size_t final_len = is_gzipped ? compressed_len : strlen(json_str);
+    
     snprintf(buffer, sizeof(buffer),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: application/json\r\n"
         "Content-Length: %zu\r\n"
         "%s"
         "%s"
-        "\r\n"
-        "%s", status, reason, strlen(json_str), res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, json_str);
+        "%s"
+        "\r\n", 
+        status, reason, final_len, 
+        res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", 
+        is_gzipped ? "Content-Encoding: gzip\r\n" : "",
+        header_buf);
         
     net_send(res, buffer, strlen(buffer));
+    
+    if (is_gzipped) {
+        net_send(res, compressed_body, compressed_len);
+        cova_free(compressed_body);
+    } else {
+        net_send(res, json_str, final_len);
+    }
 }
 
 void response_json_object(Response *res, Json *json) {
@@ -181,21 +263,40 @@ void response_html(Response *res, const char *html_str) {
                            "%s: %s\r\n", res->headers[i].name, res->headers[i].value);
     }
     
-    // Yeterince büyük bir buffer ayırıyoruz
-    char *buffer = cova_malloc(length + 2048);
-    if (!buffer) return;
-
-    snprintf(buffer, length + 2048,
+    char buffer[4096];
+    char *compressed_body = NULL;
+    size_t compressed_len = 0;
+    int is_gzipped = 0;
+    
+    if (res->use_gzip) {
+        if (gzip_compress(html_str, strlen(html_str), &compressed_body, &compressed_len) == 0) {
+            is_gzipped = 1;
+        }
+    }
+    
+    size_t final_len = is_gzipped ? compressed_len : length;
+    
+    snprintf(buffer, sizeof(buffer),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: text/html; charset=utf-8\r\n"
         "Content-Length: %zu\r\n"
         "%s"
         "%s"
-        "\r\n"
-        "%s", status, reason, length, res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", header_buf, html_str);
+        "%s"
+        "\r\n", 
+        status, reason, final_len, 
+        res->keep_alive ? "Connection: keep-alive\r\n" : "Connection: close\r\n", 
+        is_gzipped ? "Content-Encoding: gzip\r\n" : "",
+        header_buf);
         
     net_send(res, buffer, strlen(buffer));
-    cova_free(buffer);
+    
+    if (is_gzipped) {
+        net_send(res, compressed_body, compressed_len);
+        cova_free(compressed_body);
+    } else {
+        net_send(res, html_str, final_len);
+    }
 }
 
 void response_render(Response *res, const char *filepath, Json *data) {

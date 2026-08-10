@@ -146,6 +146,13 @@ void* handle_client_thread(void *arg) {
 #endif
         res.keep_alive = keep_alive;
         
+        // V19: Gzip Sıkıştırma Tespiti
+        res.use_gzip = 0;
+        const char *enc_header = request_header(&req, "Accept-Encoding");
+        if (enc_header && strstr(enc_header, "gzip")) {
+            res.use_gzip = 1;
+        }
+        
         // Middleware zinciri (V11)
         int continue_chain = 1;
         for (int i = 0; i < app->middleware_count; i++) {

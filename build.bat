@@ -8,7 +8,7 @@ echo Building Cova Framework with HTTPS (OpenSSL) and Thread Pool...
 
 set SRC_FILES=src\server.c src\request.c src\response.c src\cJSON.c src\mime.c src\memtrack.c src\database.c src\sqlite3.c src\sha1.c src\base64.c src\websocket.c src\threadpool.c
 set INC_DIRS=-Iinclude
-set LIBS=-lws2_32 -lssl -lcrypto
+set LIBS=-lws2_32 -lssl -lcrypto -lz
 
 echo Compiling server.exe...
 gcc -Wall -Wextra -Wno-implicit-fallthrough -Wno-unused-parameter -DUSE_OPENSSL %INC_DIRS% examples\main.c %SRC_FILES% -o server.exe %LIBS%
